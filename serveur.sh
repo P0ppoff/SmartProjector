@@ -8,3 +8,4 @@ gst-launch-1.0 -v rtpbin name=rtpbin ximagesrc ! videorate ! videoscale ! videoc
 
 
 
+
