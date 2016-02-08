@@ -21,7 +21,7 @@ if [ "$(uname)" == "Darwin" ]; then
 		! video/x-raw ,width=600,height=300, framerate=30/1 \
 		! mix.sink_2 \
 	avfvideosrc capture-screen=true \
-		! videoscale ! videoconvert ! video/x-raw,width=640,height=480 ! osxvideosink
+		! videoscale ! videoconvert ! video/x-raw,width=640,height=480 
 		! videoconvert ! videoscale \		
 		! mix.sink_3 \
 	videotestsrc pattern=4 \
