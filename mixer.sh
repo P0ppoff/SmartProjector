@@ -33,6 +33,7 @@ elif [ "$(uname)" == "Linux" ]; then
 		    sink_3::xpos=0   sink_3::ypos=300 \
 		    sink_4::xpos=600 sink_4::ypos=300 \
 		! xvimagesink \
+		sync=false \
 	v4l2src \
 		! videoconvert ! videoscale \
 		! video/x-raw ,width=600,height=300, framerate=30/1 \
