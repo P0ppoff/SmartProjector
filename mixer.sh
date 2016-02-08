@@ -1,6 +1,5 @@
 #!/bin/bash
 
-gst-launch-1.0 
 if [ "$(uname)" == "Darwin" ]; then
 	gst-launch-1.0  \
 	videomixer name=mix \
