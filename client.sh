@@ -6,7 +6,7 @@ param+="ssrc=(uint)1825678493, payload=(int)96, clock-base=(uint)4068866987, seq
 
 
 if [ "$(uname)" == "Darwin" ]; then
-	gst-launch-1.0 udpsrc caps="$param" port=9996 ! queue ! rtpvrawdepay  ! queue ! videoconvert ! autovideosink
+	gst-launch-1.0 udpsrc caps="$param" port=9996 ! queue ! rtpvrawdepay  ! queue ! videoconvert ! osxvideosink
 elif [ "$(uname)" == "Linux" ]; then
 	gst-launch-1.0 udpsrc caps="$param" port=9996 ! queue ! rtpvrawdepay  ! queue ! videoconvert ! autovideosink
 fi;
