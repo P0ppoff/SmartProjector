@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Celui qui envoie un flux
+# Celui qui reçoit les fluxs
 
 if [ "$(uname)" == "Darwin" ]; then
 	gst-launch-1.0 udpsrc \

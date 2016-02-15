@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Celui qui reçoit les fluxs
+# Celui qui envoie un flux
 
 # JULES 173
 # MOI 247
