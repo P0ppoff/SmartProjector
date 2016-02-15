@@ -1,11 +1,13 @@
 #!/bin/bash
 
-#JULES 173
-# MOI 247
-
+# Celui qui envoie un flux
 
 if [ "$(uname)" == "Darwin" ]; then
-		gst-launch-1.0 rtpbin name=rtpbin avfvideosrc capture-screen=true ! videorate ! videoscale ! videoconvert ! 'video/x-raw, format=(string)AYUV, width=(int)500, height=(int)500, framerate=(fraction)30/1' !  rtpvrawpay ! rtpbin ! udpsink clients="192.168.43.247:9996" sync=false async=false udpsrc port=10000 
+	gst-launch-1.0 udpsrc \
+		caps="application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)RAW, sampling=(string)YCbCr-4:4:4, depth=(string)8, width=(string)500, height=(string)500, colorimetry=(string)SMPTE240M, ssrc=(uint)1825678493, payload=(int)96, clock-base=(uint)4068866987, seqnum-base=(uint)24582" \
+		port=9996 ! queue ! rtpvrawdepay  ! queue ! videoconvert ! autovideosink 
 elif [ "$(uname)" == "Linux" ]; then
-	gst-launch-1.0 rtpbin name=rtpbin ximagesrc ! videorate ! videoscale ! videoconvert ! 'video/x-raw, format=(string)AYUV, width=(int)500, height=(int)500, framerate=(fraction)30/1' !  rtpvrawpay ! rtpbin ! udpsink clients="192.168.43.173:9996" sync=false async=false udpsrc port=10000 
+	gst-launch-1.0 udpsrc \
+		caps="application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)RAW, sampling=(string)YCbCr-4:4:4, depth=(string)8, width=(string)500, height=(string)500, colorimetry=(string)SMPTE240M, ssrc=(uint)1825678493, payload=(int)96, clock-base=(uint)4068866987, seqnum-base=(uint)24582" \
+		port=9996 ! queue ! rtpvrawdepay  ! queue ! videoconvert ! autovideosink 
 fi;
