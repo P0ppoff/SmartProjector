@@ -15,6 +15,6 @@ elif [ "$(uname)" == "Linux" ]; then
 	gst-launch-1.0 rtpbin name=rtpbin ximagesrc \
 		! videorate ! videoscale ! videoconvert \
 		! 'video/x-raw, format=(string)AYUV, width=(int)500, height=(int)500, framerate=(fraction)30/1' \
-		!  rtpvrawpay ! rtpbin ! udpsink clients="192.168.43.173:9996" \
+		!  rtpvrawpay ! rtpbin ! udpsink clients="192.68.175.1:9996" \
 		sync=false async=false udpsrc port=10000 
 fi;
