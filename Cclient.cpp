@@ -90,11 +90,13 @@ main (int argc, char *argv[])
 		! rtpvrawpay ! rtpbin ! udpsink host=127.0.0.1 port=9996 \
 		sync=false async=false udpsrc port=10000");
 #else
-	sprintf(str, "gst-launch-1.0 rtpbin name=rtpbin ximagesrc \
+//sprintf(str, "gst-launch-1.0 v4l2src ! video/x-raw, width=320, height=240,format=(string)AYUV, framerate=30/1 ! queue ! videorate ! videoscale ! videoconvert ! video/x-raw, framerate=30/1 ! jpegenc quality=50 ! udpsink host=localhost port=9996");
+
+sprintf(str, "gst-launch-1.0 rtpbin name=rtpbin ximagesrc \
 		! videorate ! videoscale ! videoconvert \
 		! video/x-raw, format=(string)AYUV, width=(int)600, height=(int)600, framerate=(fraction)30/1 \
-		!	rtpvrawpay ! rtpbin ! udpsink host=127.0.0.1 port=9996 \
-	sync=false async=false udpsrc port=10000");
+		! rtpvrawpay ! rtpbin ! udpsink host=127.0.0.1 port=9996 \
+		bitrate=300 sync=false async=false udpsrc port=10000");
 #endif
 
 	GError* err = NULL;
