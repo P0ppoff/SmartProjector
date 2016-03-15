@@ -6,15 +6,14 @@
 # MOI 247
 
 if [ "$(uname)" == "Darwin" ]; then
-	gst-launch-1.0 rtpbin name=rtpbin avfvideosrc capture-screen=true \
+	gst-launch-1.0  rtpbin name=rtpbin avfvideosrc capture-screen=true \
 		! videorate ! videoscale ! videoconvert \
 		! 'video/x-raw, format=(string)AYUV, width=(int)500, height=(int)500, framerate=(fraction)30/1' \
 		!  rtpvrawpay ! rtpbin ! udpsink clients="192.168.43.247:9996" \
 		sync=false async=false udpsrc port=10000 
 elif [ "$(uname)" == "Linux" ]; then
-	gst-launch-1.0 rtpbin name=rtpbin ximagesrc \
-		! videorate ! videoscale ! videoconvert \
-		! 'video/x-raw, format=(string)AYUV, width=(int)500, height=(int)500, framerate=(fraction)30/1' \
-		!  rtpvrawpay ! rtpbin ! udpsink clients="192.68.175.1:9996" \
-		sync=false async=false udpsrc port=10000 
+	#gst-launch-1.0 ximagesrc ! videorate ! videoscale ! videoconvert ! video/x-raw,width=640,height=480  ! rtpvrawpay ! rtpbin  !  udpsink host=127.0.0.1 port= 5000
+	gst-launch-1.0 ximagesrc  ! videoconvert ! videoscale ! video/x-raw,width=900,height=900, framerate=30/1 ! vp8enc ! rtpvp8pay ! udpsink host=127.0.0.1 port=5100
 fi;
+
+
