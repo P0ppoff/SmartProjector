@@ -1,0 +1,11 @@
+# ignore itself
+.gitignore
+.gitignore~
+
+# ignore preferencies system Qt Creator
+Gst-multiscreens-client/Gst-multiscreens-client.pro.user
+gst-multiscreens-serveur/gst-multiscreens-serveur.pro.user
+
+# ignore Finder preferency
+.DS_Store
+*/.DS_Store
