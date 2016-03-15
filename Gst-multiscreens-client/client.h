@@ -2,15 +2,21 @@
 #define CLIENT_H
 
 #include <QObject>
-
-class Client
+#include <QUdpSocket>
+class Client : public QObject
 {
+    Q_OBJECT
 public:
-    Client();
-
+    explicit Client(QObject *parent = 0);
+    void HelloUDP();
 signals:
 
 public slots:
+    void readyRead();
+
+private:
+    QUdpSocket *socket;
+
 };
 
 #endif // CLIENT_H

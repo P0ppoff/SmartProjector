@@ -5,9 +5,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    Server client;
-
-    client.HelloUDP();
+    Server server;
 
     return a.exec();
 }
