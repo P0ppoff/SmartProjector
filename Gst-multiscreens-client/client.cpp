@@ -1,12 +1,14 @@
 #include "client.h"
-
 #include <QHostAddress>
 #include <QDataStream>
 
 
-Client::Client(QObject* parent): QObject(parent)
+Client::Client()
 {
+    setupUi(this);
+
     socket = new QTcpSocket(this);
+    socket->connectToHost("127.0.0.1", 50885);
     connect(socket, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
     connect(socket, SIGNAL(connected()), this, SLOT(connecte()));
     tailleMessage = 0;
@@ -19,26 +21,20 @@ void Client::connecte()
 }
 
 
-void Client::start(QString address, quint16 port)
-{
-  QHostAddress addr(address);
-  socket->connectToHost(addr, port);
-  //EnvoyerMessage("Bonjour c'est moi !");
-}
-
 void Client::EnvoyerMessage(const QString &message)
 {
-    // Préparation du paquet
     QByteArray paquet;
     QDataStream out(&paquet, QIODevice::WriteOnly);
 
-    out << (quint16) 0; // On écrit 0 au début du paquet pour réserver la place pour écrire la taille
-    out << message; // On ajoute le message à la suite
-    out.device()->seek(0); // On se replace au début du paquet
-    out << (quint16) (paquet.size() - sizeof(quint16)); // On écrase le 0 qu'on avait réservé par la longueur du message
+    // On pr�pare le paquet � envoyer
+    QString messageAEnvoyer = message;
 
-    // Envoi du paquet préparé à tous les clients connectés au serveur
-    socket->write(paquet);
+    out << (quint16) 0;
+    out << messageAEnvoyer;
+    out.device()->seek(0);
+    out << (quint16) (paquet.size() - sizeof(quint16));
+
+    socket->write(paquet); // On envoie le paquet
 }
 
 // On a reçu un paquet (ou un sous-paquet)
@@ -71,4 +67,10 @@ void Client::donneesRecues()
 
     // On remet la taille du message à 0 pour pouvoir recevoir de futurs messages
     tailleMessage = 0;
+}
+
+void Client::on_pushButton_clicked()
+{
+
+    EnvoyerMessage(lineEdit->text());
 }

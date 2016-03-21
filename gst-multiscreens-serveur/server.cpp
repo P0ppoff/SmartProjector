@@ -8,8 +8,12 @@
 
 using namespace std;
 
-Server::Server(QObject* parent): QObject(parent)
+
+
+Server::Server()
 {
+    gst_init (&argc, &argv);
+
     // Création et disposition des widgets de la fenêtre
 
    // connect(boutonQuitter, SIGNAL(clicked()), qApp, SLOT(quit()));
@@ -27,6 +31,7 @@ Server::Server(QObject* parent): QObject(parent)
        qDebug() << "Server Started";
        connect(serveur, SIGNAL(newConnection()), this, SLOT(nouvelleConnexion()));
     }
+    tailleMessage = 0;
 }
 
 void Server::nouvelleConnexion()
@@ -72,6 +77,10 @@ void Server::donneesRecues()
     QString message;
     in >> message;
     // 2 : on renvoie le message à tous les clients
+
+
+     qDebug() << "RECU : " << message;
+
     envoyerATous(message);
     // 3 : remise de la taille du message à 0 pour permettre la réception des futurs messages
     tailleMessage = 0;

@@ -3,24 +3,27 @@
 
 #include <QtNetwork>
 #include <QObject>
+#include <QWidget>
 
 
-class Server: public QObject
+class Server: public QWidget
 {
-Q_OBJECT
-public:
-  Server(QObject * parent = 0);
-  void envoyerATous(const QString &message);
+    Q_OBJECT
 
-public slots:
-   void nouvelleConnexion();
-   void donneesRecues();
-   void deconnexionClient();
-    void connecte();
-private:
-  QTcpServer *serveur;
-  QList<QTcpSocket *> clients;
-  quint16 tailleMessage;
+    public:
+      Server();
+      void envoyerATous(const QString &message);
+
+    public slots:
+       void nouvelleConnexion();
+       void donneesRecues();
+       void deconnexionClient();
+       void connecte();
+
+    private:
+      QTcpServer *serveur;
+      QList<QTcpSocket *> clients;
+      quint16 tailleMessage;
 
 };
 

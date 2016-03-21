@@ -18,7 +18,7 @@ SOURCES += main.cpp \
 HEADERS  += \
     server.h
 
-FORMS    += mainwindow.ui
+FORMS    +=
 
 unix: LIBS += `pkg-config --cflags --libs gstreamer-1.0 gstreamer-video-1.0 gstreamer-base-1.0`
 
