@@ -11,11 +11,13 @@ class Client: public QObject
 Q_OBJECT
 public:
   Client(QObject* parent = 0);
-  ~Client();
+  void EnvoyerMessage(const QString &message);
   void start(QString address, quint16 port);
 public slots:
-  void startTransfer();
+  void donneesRecues();
+  void connecte();
 private:
-  QTcpSocket client;
+  QTcpSocket *socket; // Représente le serveur
+  quint16 tailleMessage;
 };
 #endif // CLIENT_H

@@ -3,21 +3,25 @@
 
 #include <QtNetwork>
 #include <QObject>
-#include <QTcpServer>
-#include <QTcpSocket>
+
 
 class Server: public QObject
 {
 Q_OBJECT
 public:
   Server(QObject * parent = 0);
-  ~Server();
+  void envoyerATous(const QString &message);
+
 public slots:
-  void acceptConnection();
-  void startRead();
+   void nouvelleConnexion();
+   void donneesRecues();
+   void deconnexionClient();
+    void connecte();
 private:
-  QTcpServer server;
-  QTcpSocket* client;
+  QTcpServer *serveur;
+  QList<QTcpSocket *> clients;
+  quint16 tailleMessage;
+
 };
 
 

@@ -10,6 +10,6 @@ int main(int argc, char** argv)
     window.show();
     qDebug() << "Client Started";
     Client client;
-    client.start("127.0.0.1", 8888);
+    client.start("127.0.0.1", 50885);
     return app.exec();
 }
