@@ -1,11 +1,25 @@
-#include <QCoreApplication>
 #include "server.h"
+#include <gst/gst.h>
+#include <gst/video/videooverlay.h>
 
-int main(int argc, char *argv[])
+#include <QApplication>
+
+#include <QWidget>
+
+
+
+int main(int argc, char** argv)
 {
-    QCoreApplication a(argc, argv);
-
+    QApplication app(argc, argv);
     Server server;
 
-    return a.exec();
+    gst_init (&argc, &argv);
+
+
+
+
+
+
+    return app.exec();
 }
+

@@ -1,11 +1,15 @@
-#include <QCoreApplication>
 #include "client.h"
+#include "mainwindow.h"
 
-int main(int argc, char *argv[])
+#include <QApplication>
+
+int main(int argc, char** argv)
 {
-    QCoreApplication a(argc, argv);
-
+    QApplication app(argc, argv);
+    MainWindow window;
+    window.show();
+    qDebug() << "Client Started";
     Client client;
-
-    return a.exec();
+    client.start("127.0.0.1", 8888);
+    return app.exec();
 }

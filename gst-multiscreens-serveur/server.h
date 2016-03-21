@@ -1,23 +1,24 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <QtNetwork>
 #include <QObject>
-#include <QUdpSocket>
+#include <QTcpServer>
+#include <QTcpSocket>
 
-class Server : public QObject
+class Server: public QObject
 {
-    Q_OBJECT
+Q_OBJECT
 public:
-    explicit Server(QObject *parent = 0);
-    void HelloUDP();
-signals:
-
+  Server(QObject * parent = 0);
+  ~Server();
 public slots:
-    void readyRead();
-
+  void acceptConnection();
+  void startRead();
 private:
-    QUdpSocket *socket;
-
+  QTcpServer server;
+  QTcpSocket* client;
 };
+
 
 #endif // SERVER_H

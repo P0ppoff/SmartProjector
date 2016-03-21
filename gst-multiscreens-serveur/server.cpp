@@ -1,51 +1,40 @@
 #include "server.h"
 
-Server::Server(QObject *parent) :
-    QObject(parent)
+#include <gst/gst.h>
+#include <gst/video/videooverlay.h>
+#include <iostream>
+
+using namespace std;
+
+Server::Server(QObject* parent): QObject(parent)
 {
-    // create a QUDP socket
-    socket = new QUdpSocket(this);
+  connect(&server, SIGNAL(newConnection()),this, SLOT(acceptConnection()));
 
-    // The most common way to use QUdpSocket class is
-    // to bind to an address and port using bind()
-    // bool QAbstractSocket::bind(const QHostAddress & address,
-    //     quint16 port = 0, BindMode mode = DefaultForPlatform)
-    socket->bind(QHostAddress::LocalHost, 1234);
-
-    connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
+  server.listen(QHostAddress::Any, 8888);
 }
 
-void Server::HelloUDP()
+Server::~Server()
 {
-    QByteArray Data;
-    Data.append("Hello from UDP");
-
-    // Sends the datagram datagram
-    // to the host address and at port.
-    // qint64 QUdpSocket::writeDatagram(const QByteArray & datagram,
-    //                      const QHostAddress & host, quint16 port)
-    socket->writeDatagram(Data, QHostAddress::LocalHost, 1234);
+  server.close();
 }
 
-void Server::readyRead()
+void Server::acceptConnection()
 {
-    // when data comes in
-    QByteArray buffer;
-    buffer.resize(socket->pendingDatagramSize());
+  client = server.nextPendingConnection();
 
-    QHostAddress sender;
-    quint16 senderPort;
+  connect(client, SIGNAL(readyRead()),this, SLOT(startRead()));
+}
 
-    // qint64 QUdpSocket::readDatagram(char * data, qint64 maxSize,
-    //                 QHostAddress * address = 0, quint16 * port = 0)
-    // Receives a datagram no larger than maxSize bytes and stores it in data.
-    // The sender's host address and port is stored in *address and *port
-    // (unless the pointers are 0).
+void Server::startRead()
+{
+  char buffer[1024] = {0};
+  client->read(buffer, client->bytesAvailable());
+  qDebug() << buffer;
 
-    socket->readDatagram(buffer.data(), buffer.size(),
-                         &sender, &senderPort);
+  GError* err = NULL;
+  //GstElement *pipeline = gst_pipeline_new ("xvoverlay");
+  GstElement *pipeline = gst_parse_launch(buffer, &err);
+  gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
-    qDebug() << "Message from: " << sender.toString();
-    qDebug() << "Message port: " << senderPort;
-    qDebug() << "Message: " << buffer;
+  client->close();
 }
