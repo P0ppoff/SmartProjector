@@ -18,7 +18,6 @@ class Server: public QWidget
        void nouvelleConnexion();
        void donneesRecues();
        void deconnexionClient();
-       void connecte();
 
     private:
       QTcpServer *serveur;

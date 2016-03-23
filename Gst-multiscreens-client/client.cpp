@@ -1,23 +1,44 @@
 #include "client.h"
-#include <QHostAddress>
-#include <QDataStream>
 
 
 Client::Client()
 {
-    setupUi(this);
+ /*   QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(connecte()));
+    timer->start(1000);*/
 
-    socket = new QTcpSocket(this);
-    socket->connectToHost("127.0.0.1", 50885);
-    connect(socket, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
-    connect(socket, SIGNAL(connected()), this, SLOT(connecte()));
+   w1 = new LogWindow();
+   w2 = new MainWindow();
+
+    _stack = new QStackedWidget();
+    connect(w1->getButton(),SIGNAL(clicked()),this,SLOT(connecte()));
+    _stack->addWidget(w1);
+
+      connect(w2->getButton(),SIGNAL(clicked()),this,SLOT(sendCommand()));
+    _stack->addWidget(w2);
+
+    _stack->show();
+
     tailleMessage = 0;
 }
 
 void Client::connecte()
 {
-    //nothing
-     qDebug() << "Client connected";
+    QString ip=w1->getIP();
+    int port=w1->getPort().toInt();
+
+    socket = new QTcpSocket(this);
+    socket->connectToHost(ip, 50885);
+    connect(socket, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
+    //connect(socket, SIGNAL(connected()), this, SLOT(connecte()));
+
+    _stack->setCurrentIndex((_stack->currentIndex()+1)%_stack->count());
+    qDebug() <<"Client connected to " << ip << ":" << port;
+}
+
+void Client::sendCommand()
+{
+    EnvoyerMessage(w2->getCommand());
 }
 
 
@@ -35,6 +56,7 @@ void Client::EnvoyerMessage(const QString &message)
     out << (quint16) (paquet.size() - sizeof(quint16));
 
     socket->write(paquet); // On envoie le paquet
+    qDebug() <<"Sending message: "<< message;
 }
 
 // On a reçu un paquet (ou un sous-paquet)
@@ -67,10 +89,7 @@ void Client::donneesRecues()
 
     // On remet la taille du message à 0 pour pouvoir recevoir de futurs messages
     tailleMessage = 0;
+    qDebug() <<"Received message: "<< messageRecu;
 }
 
-void Client::on_pushButton_clicked()
-{
 
-    EnvoyerMessage(lineEdit->text());
-}

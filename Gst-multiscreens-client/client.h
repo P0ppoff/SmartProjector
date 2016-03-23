@@ -1,29 +1,35 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include <QtGui>
-#include <QtNetwork>
 #include <QObject>
 #include <QString>
 #include <QTcpSocket>
-#include "ui_logwindow.h"
+#include <QStackedWidget>
+#include "mainwindow.h"
+#include "logwindow.h"
 
-class Client: public QWidget, private Ui::LogWindow
+
+class Client: public QWidget
 {
     Q_OBJECT
+    QStackedWidget* _stack;
+    LogWindow* w1 ;
+    MainWindow* w2 ;
 
     public:
       Client();
+
       void start(QString address, quint16 port);
       void EnvoyerMessage(const QString &message);
 
     public slots:
       void donneesRecues();
       void connecte();
+      void sendCommand();
+
 
 
 private slots:
-      void on_pushButton_clicked();
 
 private:
       QTcpSocket *socket; // Représente le serveur

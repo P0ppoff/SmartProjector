@@ -1,19 +1,13 @@
 #include "server.h"
+#include <iostream>
+#include <QDataStream>
 
 #include <gst/gst.h>
 #include <gst/video/videooverlay.h>
-#include <iostream>
-
-#include <QDataStream>
-
-using namespace std;
-
 
 
 Server::Server()
 {
-    gst_init (&argc, &argv);
-
     // Création et disposition des widgets de la fenêtre
 
    // connect(boutonQuitter, SIGNAL(clicked()), qApp, SLOT(quit()));
@@ -41,15 +35,10 @@ void Server::nouvelleConnexion()
     QTcpSocket *nouveauClient = serveur->nextPendingConnection();
     clients << nouveauClient;
 
-    connect(nouveauClient, SIGNAL(connected()), this, SLOT(connecte()));
+    qDebug() << "Client connected : " << nouveauClient->peerAddress();
+
     connect(nouveauClient, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
     connect(nouveauClient, SIGNAL(disconnected()), this, SLOT(deconnexionClient()));
-}
-
-void Server::connecte()
-{
-    //nothing
-     qDebug() << "Client connected";
 }
 
 
@@ -79,11 +68,21 @@ void Server::donneesRecues()
     // 2 : on renvoie le message à tous les clients
 
 
-     qDebug() << "RECU : " << message;
+     qDebug() << "Receiving message : " << message;
 
     envoyerATous(message);
     // 3 : remise de la taille du message à 0 pour permettre la réception des futurs messages
     tailleMessage = 0;
+
+
+
+
+    GError* err = NULL;
+    //GstElement *pipeline = gst_pipeline_new ("xvoverlay");
+    GstElement *pipeline = gst_parse_launch(message.toUtf8(), &err);
+    gst_element_set_state (pipeline, GST_STATE_PLAYING);
+
+
 }
 
 void Server::envoyerATous(const QString &message)
@@ -119,18 +118,4 @@ void Server::deconnexionClient()
 
     socket->deleteLater();
 }
- /*
-void Server::startRead()
-{
-  char buffer[1024] = {0};
-  client->read(buffer, client->bytesAvailable());
-  qDebug() << buffer;
 
-  GError* err = NULL;
-  //GstElement *pipeline = gst_pipeline_new ("xvoverlay");
-  GstElement *pipeline = gst_parse_launch(buffer, &err);
-  gst_element_set_state (pipeline, GST_STATE_PLAYING);
-
-  client->close();
-}
-*/
