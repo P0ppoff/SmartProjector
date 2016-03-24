@@ -19,6 +19,7 @@ public:
     ~LogWindow();
     QPushButton* getButton();
     QString getIP();
+    QString getName();
     QString getPort();
 
 private:

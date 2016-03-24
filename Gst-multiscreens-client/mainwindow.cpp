@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QDebug>
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QWidget(parent),
@@ -14,14 +14,8 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-QPushButton* MainWindow::getButton()
+QCheckBox* MainWindow::getSendBox()
 {
-    return ui->pushButton;
+    return ui->checkBox;
 }
-
-QString MainWindow::getCommand()
-{
-    return  ui->textEdit->toPlainText();
-}
-
 

@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QPushButton>
 #include <QString>
+#include <QCheckBox>
 
 namespace Ui {
 class MainWindow;
@@ -18,8 +19,7 @@ class MainWindow : public QWidget
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    QPushButton* getButton();
-    QString getCommand();
+    QCheckBox* getSendBox();
 
 private:
     Ui::MainWindow *ui;

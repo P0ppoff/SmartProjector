@@ -5,6 +5,10 @@
 #include <QString>
 #include <QTcpSocket>
 #include <QStackedWidget>
+
+#include <gst/gst.h>
+#include <gst/video/videooverlay.h>
+
 #include "mainwindow.h"
 #include "logwindow.h"
 
@@ -15,17 +19,22 @@ class Client: public QWidget
     QStackedWidget* _stack;
     LogWindow* w1 ;
     MainWindow* w2 ;
+    GError* err;
+    GstElement *pipeline;
 
     public:
       Client();
-
+      void processRequest(const QString &message);
       void start(QString address, quint16 port);
       void EnvoyerMessage(const QString &message);
 
     public slots:
       void donneesRecues();
+      void lol();
       void connecte();
-      void sendCommand();
+      void connexionSuccess();
+      void sendScreen();
+      void sendCastingValue(bool b);
 
 
 

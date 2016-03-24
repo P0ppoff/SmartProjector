@@ -13,10 +13,12 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    server.cpp
+    server.cpp \
+    user.cpp
 
 HEADERS  += \
-    server.h
+    server.h \
+    user.h
 
 FORMS    +=
 

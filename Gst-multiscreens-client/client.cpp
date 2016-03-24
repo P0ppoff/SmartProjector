@@ -1,53 +1,91 @@
 #include "client.h"
 
-
 Client::Client()
 {
- /*   QTimer *timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), this, SLOT(connecte()));
-    timer->start(1000);*/
-
-   w1 = new LogWindow();
-   w2 = new MainWindow();
+    //On déclare les différentes fenêtres à afficher au cours du programme
+    w1 = new LogWindow();
+    w2 = new MainWindow();
 
     _stack = new QStackedWidget();
+    _stack->setWindowTitle("SmartProjector");
+
+    //LogWindow
     connect(w1->getButton(),SIGNAL(clicked()),this,SLOT(connecte()));
     _stack->addWidget(w1);
+    _stack[0].resize(300,400);//On initialise la taille de la première fenêtre, qui donne la taille des autres
 
-      connect(w2->getButton(),SIGNAL(clicked()),this,SLOT(sendCommand()));
+    //MainWindow
+    connect(w2->getSendBox(),SIGNAL(toggled(bool)),this,SLOT(sendCastingValue(bool)));
     _stack->addWidget(w2);
-
     _stack->show();
 
     tailleMessage = 0;
 }
 
+//SLOT : quand le boutton "connexion" est enclenché
 void Client::connecte()
 {
-    QString ip=w1->getIP();
-    int port=w1->getPort().toInt();
-
     socket = new QTcpSocket(this);
-    socket->connectToHost(ip, 50885);
+    socket->abort();
+    socket->connectToHost(w1->getIP(), w1->getPort().toInt());
     connect(socket, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
-    //connect(socket, SIGNAL(connected()), this, SLOT(connecte()));
-
-    _stack->setCurrentIndex((_stack->currentIndex()+1)%_stack->count());
-    qDebug() <<"Client connected to " << ip << ":" << port;
+    connect(socket, SIGNAL(connected()), this, SLOT(connexionSuccess()));
+    //connect(w1, SIGNAL(), this, SLOT(lol()));
+    qDebug() <<"Trying to connect ...";
 }
 
-void Client::sendCommand()
+void Client::lol()
 {
-    EnvoyerMessage(w2->getCommand());
+    qDebug() <<"YOLO";
 }
 
+//SLOT : lorsque la connexion est établie, change l'affichage et communique avec le serveur
+void Client::connexionSuccess()
+{
+    _stack->setCurrentIndex((_stack->currentIndex()+1)%_stack->count());
+    qDebug() <<"Client connected";
+    EnvoyerMessage("name@" + w1->getName());
 
+    sendScreen();
+}
+
+//FONCTIONS : envoie le flux video via Gstreamer
+void Client::sendScreen()
+{
+    QString toLaunch="ximagesrc ! videoconvert ! videoscale "
+                     "! video/x-raw, width=900, height=900, framerate=30/1 "
+                     "! textoverlay font-desc=\"Sans 24\" text=" + w1->getName() +" shaded-background=true "
+                     "! vp8enc deadline=1 ! rtpvp8pay ! udpsink host=127.0.0.1 port=5100";
+
+     err = NULL;
+     pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
+     gst_element_set_state (pipeline, GST_STATE_PLAYING);
+}
+
+//SLOT : quand la valeur de la checkbox est modifée
+void Client::sendCastingValue(bool b)
+{
+    QString toSend = "isSending@" + QString::number(b);
+
+    if(b)
+    {
+        sendScreen();
+        qDebug() << "Client stopped to send his screen";
+    }
+    else
+    {
+        gst_element_set_state (pipeline, GST_STATE_NULL);
+        qDebug() << "Client restarted to send his screen";
+    }
+    EnvoyerMessage(toSend);
+}
+
+//FONCTION : Envoie le message passé en paramètre au serveur
 void Client::EnvoyerMessage(const QString &message)
 {
     QByteArray paquet;
     QDataStream out(&paquet, QIODevice::WriteOnly);
 
-    // On pr�pare le paquet � envoyer
     QString messageAEnvoyer = message;
 
     out << (quint16) 0;
@@ -59,37 +97,47 @@ void Client::EnvoyerMessage(const QString &message)
     qDebug() <<"Sending message: "<< message;
 }
 
-// On a reçu un paquet (ou un sous-paquet)
+//SLOT : Réception de données + traitement
 void Client::donneesRecues()
 {
-    /* Même principe que lorsque le serveur reçoit un paquet :
-    On essaie de récupérer la taille du message
-    Une fois qu'on l'a, on attend d'avoir reçu le message entier (en se basant sur la taille annoncée tailleMessage)
-    */
     QDataStream in(socket);
 
-    if (tailleMessage == 0)
+    if (tailleMessage == 0) // récupère la taille du message
     {
         if (socket->bytesAvailable() < (int)sizeof(quint16))
              return;
-
         in >> tailleMessage;
     }
-
     if (socket->bytesAvailable() < tailleMessage)
         return;
 
-
-    // Si on arrive jusqu'à cette ligne, on peut récupérer le message entier
+    //récupère le message
     QString messageRecu;
     in >> messageRecu;
 
-    // On affiche le message sur la zone de Chat
-   // listeMessages->append(messageRecu);
-
-    // On remet la taille du message à 0 pour pouvoir recevoir de futurs messages
     tailleMessage = 0;
+
     qDebug() <<"Received message: "<< messageRecu;
+    //processRequest(messageRecu);
 }
 
 
+//Potentiellement utile pour plus tard, ne pas supprimer
+void Client::processRequest(const QString &message)
+{
+    QStringList req= message.split(QRegExp("@"));
+
+   if(req[0].compare("isSendingOK")==0)
+    {
+        if(req[1].toInt()==0)
+        {
+            qDebug() << "Client is set to PAUSED";
+            gst_element_set_state (pipeline, GST_STATE_PAUSED);
+        }
+        else if(req[1].toInt()==1)
+        {
+            qDebug() << "Client is set to PLAYING";
+            gst_element_set_state (pipeline, GST_STATE_PLAYING);
+        }
+    }
+}

@@ -18,7 +18,6 @@ LogWindow::~LogWindow()
 
 QPushButton* LogWindow::getButton()
 {
-
     return ui->pushButton;
 }
 
@@ -30,5 +29,10 @@ QString LogWindow::getIP()
 QString LogWindow::getPort()
 {
     return ui->Port_text->text();
+}
+
+QString LogWindow::getName()
+{
+    return ui->Name_text->text();
 }
 
