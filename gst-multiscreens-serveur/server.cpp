@@ -25,18 +25,23 @@ Server::Server()
     }
     tailleMessage = 0;
     pipeline = NULL;
+    allocatedPort = 5000;
 }
 
 //SLOT : quand une nouvelle connexion est établie, ajoute un Client à la liste et le connecte
 void Server::nouvelleConnexion()
 {  
     User nouveauClient(serveur->nextPendingConnection()) ;
-    clients << nouveauClient;
+
 
     qDebug() << "Client connected : " << nouveauClient.sock->peerAddress();
     connect(nouveauClient.sock, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
     connect(nouveauClient.sock, SIGNAL(disconnected()), this, SLOT(deconnexionClient()));
-    sendToClient("Serveur : Connexion effectuée",nouveauClient.sock);
+    sendToClient("port@"+QString::number(allocatedPort),nouveauClient.sock);
+    nouveauClient.port=allocatedPort;
+    allocatedPort++;
+
+    clients << nouveauClient;
     //setPipeline();
 }
 
@@ -116,24 +121,24 @@ void Server::setPipeline()
         //screen.height();
         //screen.width();
 
-        toLaunch="videomixer name=mix ";
+        toLaunch="videomixer name=mix";
         for (int i = 0; i < clients.size(); i++)
         {
             if(clients[i].isSending)
             {
-                toLaunch+="sink_" + QString::number(i);
+                toLaunch+=" sink_" + QString::number(i);
                 toLaunch+="::xpos=" + QString::number(i*300);
                 toLaunch+=" sink_" + QString::number(i) ;
                 toLaunch+="::ypos=" + QString::number((nbSender-i)*300);
             }
         }
-        toLaunch+=" ! autovideosink sync=false ";
+        toLaunch+=" ! autovideosink sync=false";
 
         for (int i = 0; i < clients.size(); i++)
         {
             if(clients[i].isSending)
             {
-                toLaunch+="udpsrc port=5100 caps = \"application/x-rtp, media=(string)video, clock-rate=(int)90000, "
+                toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, clock-rate=(int)90000, "
                           "encoding-name=(string)VP8, payload=(int)96, ssrc=(uint)2432391931"
                           ", timestamp-offset=(uint)1048101710, seqnum-offset=(uint)9758\" ! rtpjitterbuffer latency=0 ! rtpvp8depay "
                           "! vp8dec  ! videoscale "
@@ -145,8 +150,6 @@ void Server::setPipeline()
         pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
         gst_element_set_state (pipeline, GST_STATE_PLAYING);
     }
-
-
 }
 
 //FONCTION : Envoie à la socket le message

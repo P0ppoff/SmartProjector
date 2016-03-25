@@ -45,8 +45,6 @@ void Client::connexionSuccess()
     _stack->setCurrentIndex((_stack->currentIndex()+1)%_stack->count());
     qDebug() <<"Client connected";
     EnvoyerMessage("name@" + w1->getName());
-
-    sendScreen();
 }
 
 //FONCTIONS : envoie le flux video via Gstreamer
@@ -55,7 +53,8 @@ void Client::sendScreen()
     QString toLaunch="ximagesrc ! videoconvert ! videoscale "
                      "! video/x-raw, width=900, height=900, framerate=30/1 "
                      "! textoverlay font-desc=\"Sans 24\" text=" + w1->getName() +" shaded-background=true "
-                     "! vp8enc deadline=1 ! rtpvp8pay ! udpsink host=127.0.0.1 port=5100";
+                     "! vp8enc deadline=1 ! rtpvp8pay ! udpsink host=127.0.0.1 port="+QString::number(port);
+     qDebug() << toLaunch;
 
      err = NULL;
      pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
@@ -118,7 +117,7 @@ void Client::donneesRecues()
     tailleMessage = 0;
 
     qDebug() <<"Received message: "<< messageRecu;
-    //processRequest(messageRecu);
+    processRequest(messageRecu);
 }
 
 
@@ -127,17 +126,9 @@ void Client::processRequest(const QString &message)
 {
     QStringList req= message.split(QRegExp("@"));
 
-   if(req[0].compare("isSendingOK")==0)
+   if(req[0].compare("port")==0)
     {
-        if(req[1].toInt()==0)
-        {
-            qDebug() << "Client is set to PAUSED";
-            gst_element_set_state (pipeline, GST_STATE_PAUSED);
-        }
-        else if(req[1].toInt()==1)
-        {
-            qDebug() << "Client is set to PLAYING";
-            gst_element_set_state (pipeline, GST_STATE_PLAYING);
-        }
+       port=req[1].toInt();
+       sendScreen();
     }
 }

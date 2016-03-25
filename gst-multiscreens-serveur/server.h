@@ -37,6 +37,7 @@ class Server: public QWidget
       QTcpServer *serveur;
       QList<User> clients;
       //QList<QTcpSocket *> clients;
+      int allocatedPort;
       quint16 tailleMessage;
 
 };

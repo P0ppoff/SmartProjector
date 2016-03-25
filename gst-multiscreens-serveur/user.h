@@ -12,6 +12,7 @@ class User
 
 public:
     QTcpSocket * sock;
+    int port;
     bool isSending;
     QString name;
     User(QTcpSocket * serv);

@@ -43,5 +43,6 @@ private slots:
 private:
       QTcpSocket *socket; // Représente le serveur
       quint16 tailleMessage;
+      int port;
 };
 #endif // CLIENT_H
