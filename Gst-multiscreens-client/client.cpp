@@ -19,6 +19,7 @@ Client::Client()
     _stack->addWidget(w2);
     _stack->show();
 
+    pipeline=NULL;
     tailleMessage = 0;
 }
 
@@ -30,13 +31,19 @@ void Client::connecte()
     socket->connectToHost(w1->getIP(), w1->getPort().toInt());
     connect(socket, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
     connect(socket, SIGNAL(connected()), this, SLOT(connexionSuccess()));
-    //connect(w1, SIGNAL(), this, SLOT(lol()));
+    connect(socket, SIGNAL(disconnected()), this, SLOT(connexionLost()));
     qDebug() <<"Trying to connect ...";
 }
 
-void Client::lol()
+void Client::connexionLost()
 {
-    qDebug() <<"YOLO";
+    socket->abort();
+    if(pipeline!=NULL)
+    {
+       gst_element_set_state (pipeline, GST_STATE_NULL);
+       _stack->setCurrentIndex(_stack->currentIndex()-1);
+    }
+    qDebug() <<"Connexion with server lost...";
 }
 
 //SLOT : lorsque la connexion est établie, change l'affichage et communique avec le serveur
@@ -50,8 +57,13 @@ void Client::connexionSuccess()
 //FONCTIONS : envoie le flux video via Gstreamer
 void Client::sendScreen()
 {
+    if(pipeline!=NULL)
+    {
+       gst_element_set_state (pipeline, GST_STATE_NULL);
+    }
+
     QString toLaunch="ximagesrc ! videoconvert ! videoscale "
-                     "! video/x-raw, width=900, height=900, framerate=30/1 "
+                     "! video/x-raw, width=600, height=300, framerate=30/1 "
                      "! textoverlay font-desc=\"Sans 24\" text=" + w1->getName() +" shaded-background=true "
                      "! vp8enc deadline=1 ! rtpvp8pay ! udpsink host=127.0.0.1 port="+QString::number(port);
      qDebug() << toLaunch;
@@ -73,8 +85,9 @@ void Client::sendCastingValue(bool b)
     }
     else
     {
-        gst_element_set_state (pipeline, GST_STATE_NULL);
         qDebug() << "Client restarted to send his screen";
+        gst_element_set_state (pipeline, GST_STATE_NULL);
+        pipeline=NULL;
     }
     EnvoyerMessage(toSend);
 }
@@ -126,9 +139,12 @@ void Client::processRequest(const QString &message)
 {
     QStringList req= message.split(QRegExp("@"));
 
-   if(req[0].compare("port")==0)
+    if(req[0].compare("port")==0)//Quand on lui donne son port, le client est prêt à envoyer
     {
-       port=req[1].toInt();
-       sendScreen();
+        port=req[1].toInt();
+    }
+    if(req[0].compare("restartSending")==0) // Quand il reçoit l'ordre d'envoyer, il envoie
+    {
+        sendScreen();
     }
 }

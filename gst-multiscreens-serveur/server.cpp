@@ -86,7 +86,6 @@ void Server::processRequest(const QString &message,QTcpSocket*socket)
 
         clients[idClient].isSending=statePlaying;
         setPipeline();
-        //sendToClient("isSendingOK@" + req[1] ,socket);
     }
     else if (req[0].compare("name")==0)
     {
@@ -104,7 +103,6 @@ void Server::setPipeline()
     if(pipeline!=NULL)
     {
        gst_element_set_state (pipeline, GST_STATE_NULL);
-       gst_object_unref (pipeline);
     }
 
 
@@ -122,14 +120,15 @@ void Server::setPipeline()
         //screen.width();
 
         toLaunch="videomixer name=mix";
+
         for (int i = 0; i < clients.size(); i++)
         {
             if(clients[i].isSending)
             {
                 toLaunch+=" sink_" + QString::number(i);
-                toLaunch+="::xpos=" + QString::number(i*300);
-                toLaunch+=" sink_" + QString::number(i) ;
-                toLaunch+="::ypos=" + QString::number((nbSender-i)*300);
+                toLaunch+="::xpos=" + QString::number((i/(int)sqrt(nbSender))*600);
+                toLaunch+=" sink_" + QString::number(i);
+                toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbSender))*300);
             }
         }
         toLaunch+=" ! autovideosink sync=false";
@@ -140,15 +139,17 @@ void Server::setPipeline()
             {
                 toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, clock-rate=(int)90000, "
                           "encoding-name=(string)VP8, payload=(int)96, ssrc=(uint)2432391931"
-                          ", timestamp-offset=(uint)1048101710, seqnum-offset=(uint)9758\" ! rtpjitterbuffer latency=0 ! rtpvp8depay "
-                          "! vp8dec  ! videoscale "
-                          "! video/x-raw ,width=600,height=300 ! mix.sink_" + QString::number(i) ;
+                          ", timestamp-offset=(uint)1048101710, seqnum-offset=(uint)9758\" ! rtpvp8depay "
+                          "! vp8dec ! videoscale "
+                          "! video/x-raw , width=600 , height=300 ! mix.sink_" + QString::number(i) ;
             }
         }
         qDebug() << toLaunch;
+        toLaunch+="";
         err = NULL;
         pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
         gst_element_set_state (pipeline, GST_STATE_PLAYING);
+        envoyerATous("restartSending@"); // tous les client doivent recommencer leur envoi
     }
 }
 
@@ -183,7 +184,10 @@ void Server::envoyerATous(const QString &message)
 
     for (int i = 0; i < clients.size(); i++)
     {
-        clients[i].sock->write(paquet);
+        if(clients[i].isSending)
+        {
+            clients[i].sock->write(paquet);
+        }
     }
 }
 

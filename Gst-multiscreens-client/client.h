@@ -30,7 +30,7 @@ class Client: public QWidget
 
     public slots:
       void donneesRecues();
-      void lol();
+      void connexionLost();
       void connecte();
       void connexionSuccess();
       void sendScreen();
