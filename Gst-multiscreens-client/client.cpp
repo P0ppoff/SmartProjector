@@ -68,11 +68,11 @@ void Client::sendScreen()
     if(pipeline!=NULL)
     {
        gst_element_set_state (pipeline, GST_STATE_NULL);
+       gst_object_unref (pipeline);
     }
 
     QString toLaunch="ximagesrc use-damage=1 ! queue ! videoconvert ! queue ! videoscale "
                      "! queue ! video/x-raw, width=600, height=300, framerate=30/1 "
-                     "! textoverlay font-desc=\"Sans 24\" text=" + userName +" shaded-background=true "
                      "! vp8enc deadline=1 ! queue ! rtpvp8pay ! udpsink host=127.0.0.1 port="+QString::number(port);
      qDebug() << toLaunch;
 
@@ -85,15 +85,14 @@ void Client::sendScreen()
 void Client::sendCastingValue(bool b)
 {
     QString toSend = "isSending@" + QString::number(b);
-
     if(b)
     {
+        qDebug() << "Client restarted to send his screen";
         sendScreen();
-        qDebug() << "Client stopped to send his screen";
     }
     else
     {
-        qDebug() << "Client restarted to send his screen";
+        qDebug() << "Client stopped to send his screen";
         gst_element_set_state (pipeline, GST_STATE_NULL);
         pipeline=NULL;
     }
@@ -155,7 +154,7 @@ void Client::processRequest(const QString &message)
     {
         sendScreen();
     }
-    if(req[0].compare("chat")==0) // Quand il reçoit l'ordre d'envoyer, il envoie
+    if(req[0].compare("chat")==0) // On ajoute le message reçu à la liste
     {
         w2->getListMessageChat()->append(req[1]);
     }
