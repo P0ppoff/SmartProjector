@@ -21,6 +21,7 @@ class Client: public QWidget
     MainWindow* w2 ;
     GError* err;
     GstElement *pipeline;
+    QString userName;
 
     public:
       Client();
@@ -35,6 +36,7 @@ class Client: public QWidget
       void connexionSuccess();
       void sendScreen();
       void sendCastingValue(bool b);
+      void sendChat();
 
 
 

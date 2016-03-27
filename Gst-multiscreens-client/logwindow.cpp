@@ -15,7 +15,6 @@ LogWindow::~LogWindow()
     delete ui;
 }
 
-
 QPushButton* LogWindow::getButton()
 {
     return ui->pushButton;

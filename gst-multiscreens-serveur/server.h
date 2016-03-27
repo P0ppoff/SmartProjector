@@ -20,9 +20,11 @@ class Server: public QWidget
 
     public:
       Server();
-      void envoyerATous(const QString &message);
-      void processRequest(const QString &message,QTcpSocket*socket);
+      QByteArray createPacket(const QString &message);
+      void sendToAll(const QString &message);
+      void sendToAllConnected(const QString &message);
       void sendToClient(const QString &message,QTcpSocket*socket);
+      void processRequest(const QString &message,QTcpSocket*socket);
       void setPipeline();
 
     public slots:

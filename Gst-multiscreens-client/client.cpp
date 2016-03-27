@@ -16,11 +16,18 @@ Client::Client()
 
     //MainWindow
     connect(w2->getSendBox(),SIGNAL(toggled(bool)),this,SLOT(sendCastingValue(bool)));
+    connect(w2->getPushChat(),SIGNAL(clicked()),this,SLOT(sendChat()));
     _stack->addWidget(w2);
     _stack->show();
 
     pipeline=NULL;
     tailleMessage = 0;
+}
+
+//SLOT : quand le boutton "send" est enclenché
+void Client::sendChat()
+{
+    EnvoyerMessage("chat@" + userName + " : "+ w2->getLineChat());
 }
 
 //SLOT : quand le boutton "connexion" est enclenché
@@ -51,7 +58,8 @@ void Client::connexionSuccess()
 {
     _stack->setCurrentIndex((_stack->currentIndex()+1)%_stack->count());
     qDebug() <<"Client connected";
-    EnvoyerMessage("name@" + w1->getName());
+    userName=w1->getName();
+    EnvoyerMessage("name@" + userName);
 }
 
 //FONCTIONS : envoie le flux video via Gstreamer
@@ -62,10 +70,10 @@ void Client::sendScreen()
        gst_element_set_state (pipeline, GST_STATE_NULL);
     }
 
-    QString toLaunch="ximagesrc ! videoconvert ! videoscale "
-                     "! video/x-raw, width=600, height=300, framerate=30/1 "
-                     "! textoverlay font-desc=\"Sans 24\" text=" + w1->getName() +" shaded-background=true "
-                     "! vp8enc deadline=1 ! rtpvp8pay ! udpsink host=127.0.0.1 port="+QString::number(port);
+    QString toLaunch="ximagesrc use-damage=1 ! queue ! videoconvert ! queue ! videoscale "
+                     "! queue ! video/x-raw, width=600, height=300, framerate=30/1 "
+                     "! textoverlay font-desc=\"Sans 24\" text=" + userName +" shaded-background=true "
+                     "! vp8enc deadline=1 ! queue ! rtpvp8pay ! udpsink host=127.0.0.1 port="+QString::number(port);
      qDebug() << toLaunch;
 
      err = NULL;
@@ -146,5 +154,9 @@ void Client::processRequest(const QString &message)
     if(req[0].compare("restartSending")==0) // Quand il reçoit l'ordre d'envoyer, il envoie
     {
         sendScreen();
+    }
+    if(req[0].compare("chat")==0) // Quand il reçoit l'ordre d'envoyer, il envoie
+    {
+        w2->getListMessageChat()->append(req[1]);
     }
 }

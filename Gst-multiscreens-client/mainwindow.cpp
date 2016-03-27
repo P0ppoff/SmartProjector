@@ -19,3 +19,20 @@ QCheckBox* MainWindow::getSendBox()
     return ui->checkBox;
 }
 
+
+QPushButton* MainWindow::getPushChat()
+{
+    return ui->pushChat;
+}
+
+QString MainWindow::getLineChat()
+{
+    return ui->lineChat->text();
+}
+
+QTextEdit* MainWindow::getListMessageChat()
+{
+    return ui->textChat;
+}
+
+

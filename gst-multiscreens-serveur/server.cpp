@@ -26,6 +26,7 @@ Server::Server()
     tailleMessage = 0;
     pipeline = NULL;
     allocatedPort = 5000;
+    setPipeline();
 }
 
 //SLOT : quand une nouvelle connexion est établie, ajoute un Client à la liste et le connecte
@@ -42,7 +43,6 @@ void Server::nouvelleConnexion()
     allocatedPort++;
 
     clients << nouveauClient;
-    //setPipeline();
 }
 
 //SLOT : quand un message arrive, le récupère et le traite
@@ -91,6 +91,10 @@ void Server::processRequest(const QString &message,QTcpSocket*socket)
     {
         clients[idClient].name=req[1];
         setPipeline();
+    }
+    else if (req[0].compare("chat")==0)
+    {
+        sendToAll(message);
     }
 }
 
@@ -144,17 +148,24 @@ void Server::setPipeline()
                           "! video/x-raw , width=600 , height=300 ! mix.sink_" + QString::number(i) ;
             }
         }
-        qDebug() << toLaunch;
-        toLaunch+="";
-        err = NULL;
-        pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
-        gst_element_set_state (pipeline, GST_STATE_PLAYING);
-        envoyerATous("restartSending@"); // tous les client doivent recommencer leur envoi
     }
+    else
+    {
+
+        toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
+                 "text=\"Connect to "+ serveur->serverAddress().toString() + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true ! autovideosink";
+    }
+    qDebug() << toLaunch;
+
+    err = NULL;
+    pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
+    gst_element_set_state (pipeline, GST_STATE_PLAYING);
+    sendToAll("restartSending@"); // tous les client doivent recommencer leur envoi
 }
 
-//FONCTION : Envoie à la socket le message
-void Server::sendToClient(const QString &message,QTcpSocket*socket)
+
+//FONCTION : fabrique la paquet à envoyer
+QByteArray Server::createPacket(const QString &message)
 {
     // Préparation du paquet
     QByteArray paquet;
@@ -164,23 +175,30 @@ void Server::sendToClient(const QString &message,QTcpSocket*socket)
     out << message; // On ajoute le message à la suite
     out.device()->seek(0); // On se replace au début du paquet
     out << (quint16) (paquet.size() - sizeof(quint16)); // On écrase le 0 qu'on avait réservé par la longueur du message
-
-    socket->write(paquet);
+    return paquet;
 }
 
-
-
-
-//FONCTION : potentiellement utile pour plus tard
-void Server::envoyerATous(const QString &message)
+//FONCTION : Envoie à la socket le message
+void Server::sendToClient(const QString &message,QTcpSocket*socket)
 {
-    QByteArray paquet;
-    QDataStream out(&paquet, QIODevice::WriteOnly);
+    socket->write(createPacket(message));
+}
 
-    out << (quint16) 0; // On écrit 0 au début du paquet pour réserver la place pour écrire la taille
-    out << message; // On ajoute le message à la suite
-    out.device()->seek(0); // On se replace au début du paquet
-    out << (quint16) (paquet.size() - sizeof(quint16)); // On écrase le 0 qu'on avait réservé par la longueur du message
+//FONCTION : envoie le message à tous les clients
+void Server::sendToAll(const QString &message)
+{
+    QByteArray paquet=createPacket(message);
+
+    for (int i = 0; i < clients.size(); i++)
+    {
+            clients[i].sock->write(paquet);
+    }
+}
+
+//FONCTION : envoie le message à tous les clients
+void Server::sendToAllConnected(const QString &message)
+{
+    QByteArray paquet=createPacket(message);
 
     for (int i = 0; i < clients.size(); i++)
     {

@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QString>
 #include <QCheckBox>
+#include <QTextEdit>
 
 namespace Ui {
 class MainWindow;
@@ -20,9 +21,13 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     QCheckBox* getSendBox();
+    QPushButton* getPushChat();
+    QString getLineChat();
+    QTextEdit* getListMessageChat();
 
 private:
     Ui::MainWindow *ui;
 };
 
 #endif // MAINWINDOW_H
+
