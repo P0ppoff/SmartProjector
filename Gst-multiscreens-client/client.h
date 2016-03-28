@@ -21,6 +21,8 @@ class Client: public QWidget
     MainWindow* w2 ;
     GError* err;
     GstElement *pipeline;
+    GstBus *bus;
+    GstMessage *msg;
     QString userName;
 
     public:
@@ -46,5 +48,6 @@ private:
       QTcpSocket *socket; // Représente le serveur
       quint16 tailleMessage;
       int port;
+      bool isSending;
 };
 #endif // CLIENT_H

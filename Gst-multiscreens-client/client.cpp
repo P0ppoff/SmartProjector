@@ -21,6 +21,7 @@ Client::Client()
     _stack->show();
 
     pipeline=NULL;
+    isSending=true;
     tailleMessage = 0;
 }
 
@@ -67,36 +68,39 @@ void Client::sendScreen()
 {
     if(pipeline!=NULL)
     {
-       gst_element_set_state (pipeline, GST_STATE_NULL);
-       gst_object_unref (pipeline);
+        gst_element_set_state (pipeline, GST_STATE_NULL);
+        gst_object_unref (pipeline);
     }
 
-    QString toLaunch="ximagesrc use-damage=1 ! queue ! videoconvert ! queue ! videoscale "
+    QString toLaunch="ximagesrc ! queue ! videoconvert ! queue ! videoscale "
                      "! queue ! video/x-raw, width=600, height=300, framerate=30/1 "
-                     "! vp8enc deadline=1 ! queue ! rtpvp8pay ! udpsink host=127.0.0.1 port="+QString::number(port);
-     qDebug() << toLaunch;
+                     "! vp8enc ! queue ! rtpvp8pay ! udpsink host=127.0.0.1 port="+QString::number(port);
+    qDebug() << toLaunch;
 
-     err = NULL;
-     pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
-     gst_element_set_state (pipeline, GST_STATE_PLAYING);
+    err = NULL;
+    pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
+    gst_element_set_state (pipeline, GST_STATE_PLAYING);
 }
 
 //SLOT : quand la valeur de la checkbox est modifée
 void Client::sendCastingValue(bool b)
 {
     QString toSend = "isSending@" + QString::number(b);
+
     if(b)
     {
         qDebug() << "Client restarted to send his screen";
-        sendScreen();
     }
     else
     {
         qDebug() << "Client stopped to send his screen";
-        gst_element_set_state (pipeline, GST_STATE_NULL);
+        gst_element_set_state (pipeline, GST_STATE_PAUSED);
+        gst_object_unref (pipeline);
         pipeline=NULL;
     }
+    isSending=b;
     EnvoyerMessage(toSend);
+
 }
 
 //FONCTION : Envoie le message passé en paramètre au serveur
@@ -114,6 +118,10 @@ void Client::EnvoyerMessage(const QString &message)
 
     socket->write(paquet); // On envoie le paquet
     qDebug() <<"Sending message: "<< message;
+
+
+
+
 }
 
 //SLOT : Réception de données + traitement
@@ -138,6 +146,7 @@ void Client::donneesRecues()
 
     qDebug() <<"Received message: "<< messageRecu;
     processRequest(messageRecu);
+
 }
 
 

@@ -67,10 +67,8 @@ void Server::donneesRecues()
 
 
      qDebug() << "Receiving message : " << message;
-
-     processRequest(message,socket);
      tailleMessage = 0;
-
+     processRequest(message,socket);
 }
 
 //FONCTION : réagit selon le message passé en paramètre
@@ -121,8 +119,8 @@ void Server::setPipeline()
 
     if(nbSender>0)
     {
-        //screen.height();
-        //screen.width();
+        int y=screen.height()/((int)nbSender);
+        int x=screen.width()/((int)nbSender);
 
         toLaunch="videomixer name=mix";
 
@@ -131,9 +129,9 @@ void Server::setPipeline()
             if(clients[i].isSending)
             {
                 toLaunch+=" sink_" + QString::number(i);
-                toLaunch+="::xpos=" + QString::number((i/(int)sqrt(nbSender))*600);
+                toLaunch+="::xpos=" + QString::number((i/(int)sqrt(nbSender))*x);
                 toLaunch+=" sink_" + QString::number(i);
-                toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbSender))*300);
+                toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbSender))*y);
             }
         }
         toLaunch+=" ! autovideosink sync=false";
@@ -142,11 +140,9 @@ void Server::setPipeline()
         {
             if(clients[i].isSending)
             {
-                toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, clock-rate=(int)90000, "
-                          "encoding-name=(string)VP8, payload=(int)96, ssrc=(uint)2432391931"
-                          ", timestamp-offset=(uint)1048101710, seqnum-offset=(uint)9758\" ! rtpvp8depay "
-                          "! vp8dec ! videoscale "
-                          "! video/x-raw , width=600 , height=300 ! mix.sink_" + QString::number(i) ;
+                toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, "
+                          "encoding-name=(string)VP8, payload=(int)96\" ! rtpvp8depay ! vp8dec ! videoscale "
+                          "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i) ;
             }
         }
     }
@@ -154,14 +150,16 @@ void Server::setPipeline()
     {
 
         toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
-                 "text=\"Connect to "+ serveur->serverAddress().toString() + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true ! autovideosink";
+                 "text=\"Connect to "+ serveur->serverAddress().toString() + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true !  autovideosink";
+
+                // "! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! autovideosink";
     }
     qDebug() << toLaunch;
 
     err = NULL;
     pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
     gst_element_set_state (pipeline, GST_STATE_PLAYING);
-    sendToAll("restartSending@"); // tous les client doivent recommencer leur envoi
+    sendToAllConnected("restartSending@"); // tous les client doivent recommencer leur envoi
 }
 
 
