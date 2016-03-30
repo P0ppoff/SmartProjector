@@ -9,3 +9,6 @@ gst-multiscreens-serveur/gst-multiscreens-serveur.pro.user
 # ignore Finder preferency
 .DS_Store
 */.DS_Store
+
+# ignore Building
+build-*/
