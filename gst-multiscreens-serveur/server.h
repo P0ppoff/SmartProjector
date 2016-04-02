@@ -41,6 +41,7 @@ class Server: public QWidget
       //QList<QTcpSocket *> clients;
       int allocatedPort;
       quint16 tailleMessage;
+      QString localIp;
 
 };
 

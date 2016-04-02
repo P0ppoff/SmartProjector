@@ -23,6 +23,12 @@ Server::Server()
        screen = QApplication::desktop()->screenGeometry();
        connect(serveur, SIGNAL(newConnection()), this, SLOT(nouvelleConnexion()));
     }
+
+    //on récupère l'ip du serveur pour l'afficher
+    foreach (const QHostAddress &address, QNetworkInterface::allAddresses()) {
+        if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost))
+             localIp=address.toString();
+    }
     tailleMessage = 0;
     pipeline = NULL;
     allocatedPort = 5000;
@@ -148,18 +154,16 @@ void Server::setPipeline()
     }
     else
     {
-
         toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
-                 "text=\"Connect to "+ serveur->serverAddress().toString() + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true !  autovideosink";
-
-                // "! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! autovideosink";
+                 "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
+                 "! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! autovideosink";
     }
     qDebug() << toLaunch;
 
     err = NULL;
     pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
     gst_element_set_state (pipeline, GST_STATE_PLAYING);
-    sendToAllConnected("restartSending@"); // tous les client doivent recommencer leur envoi
+    sendToAllConnected("restartSending@"+ QString::number(nbSender) ); // tous les client doivent recommencer leur envoi
 }
 
 

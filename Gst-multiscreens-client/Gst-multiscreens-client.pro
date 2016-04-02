@@ -15,21 +15,23 @@ TEMPLATE = app
 SOURCES += main.cpp\
     client.cpp \
     mainwindow.cpp \
-    logwindow.cpp
+    logwindow.cpp \
+    wmctrl.c
 
 HEADERS  += client.h \
     mainwindow.h \
-    logwindow.h
+    logwindow.h \
+    wmctrl.h
 
 FORMS    += \
     mainwindow.ui \
     logwindow.ui
 
 
-unix: LIBS += `pkg-config --cflags --libs gstreamer-1.0 gstreamer-video-1.0 gstreamer-base-1.0`
+unix: LIBS += -L/usr/X11/lib -lX11 -lstdc++ `pkg-config --cflags --libs gstreamer-1.0 gstreamer-video-1.0 gstreamer-base-1.0`
 
 
 unix: CONFIG += link_pkgconfig
-unix: PKGCONFIG += gstreamer-1.0 gstreamer-video-1.0 gstreamer-base-1.0
+unix: PKGCONFIG += gstreamer-1.0 gstreamer-video-1.0 gstreamer-base-1.0 glib-2.0
 
 DISTFILES +=

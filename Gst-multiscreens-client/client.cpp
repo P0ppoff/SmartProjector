@@ -1,4 +1,9 @@
 #include "client.h"
+#include "math.h"
+extern "C"
+{
+    #include "wmctrl.h"
+}
 
 Client::Client()
 {
@@ -12,17 +17,24 @@ Client::Client()
     //LogWindow
     connect(w1->getButton(),SIGNAL(clicked()),this,SLOT(connecte()));
     _stack->addWidget(w1);
-    _stack[0].resize(300,400);//On initialise la taille de la première fenêtre, qui donne la taille des autres
+    _stack[0].resize(600,500);//On initialise la taille de la première fenêtre, qui donne la taille des autres
 
     //MainWindow
     connect(w2->getSendBox(),SIGNAL(toggled(bool)),this,SLOT(sendCastingValue(bool)));
     connect(w2->getPushChat(),SIGNAL(clicked()),this,SLOT(sendChat()));
+#ifdef __linux__
+    connect(w2->getPushRefresh(),SIGNAL(clicked()),this,SLOT(refreshWinList()));
+#else
+    w2->getPushRefresh()->hide();
+#endif
     _stack->addWidget(w2);
     _stack->show();
 
     pipeline=NULL;
     isSending=true;
     tailleMessage = 0;
+    screen = QApplication::desktop()->screenGeometry();
+
 }
 
 //SLOT : quand le boutton "send" est enclenché
@@ -43,6 +55,7 @@ void Client::connecte()
     qDebug() <<"Trying to connect ...";
 }
 
+
 void Client::connexionLost()
 {
     socket->abort();
@@ -54,6 +67,16 @@ void Client::connexionLost()
     qDebug() <<"Connexion with server lost...";
 }
 
+void Client::refreshWinList()
+{
+    QStringList toSend =  w2->getWindowsChecked();
+    char *temp=getWinList();
+    QString res =QString::fromLatin1(temp,strlen(temp));
+    w2->setTableScreen(res,toSend);
+    free(temp);
+    sendWindowsForLinux(toSend);
+}
+
 //SLOT : lorsque la connexion est établie, change l'affichage et communique avec le serveur
 void Client::connexionSuccess()
 {
@@ -61,7 +84,58 @@ void Client::connexionSuccess()
     qDebug() <<"Client connected";
     userName=w1->getName();
     EnvoyerMessage("name@" + userName);
+
+#ifdef __linux__
+    //Récupère la liste des fenêtres existantes
+    char *temp=getWinList();
+    QString res =QString::fromLatin1(temp,strlen(temp));
+    w2->setTableScreen(res,QStringList());
+    free(temp);
+#endif
 }
+
+//FONCTIONS : envoie le flux video via Gstreamer
+void Client::sendWindowsForLinux(QStringList toSend)
+{
+    int nbWindows = toSend.count();
+    if(nbWindows>0)
+    {
+        int y=screen.height()/(nbWindows);
+        int x=screen.width()/(nbWindows);
+        QString toLaunch="";
+        if(pipeline!=NULL)
+        {
+            gst_element_set_state (pipeline, GST_STATE_NULL);
+            gst_object_unref (pipeline);
+        }
+
+        toLaunch+="videomixer name=mix";
+        for (int i = 0; i < nbWindows; i++)
+        {
+                toLaunch+=" sink_" + QString::number(i);
+                toLaunch+="::xpos=" + QString::number((i/(int)sqrt(nbWindows))*x);
+                toLaunch+=" sink_" + QString::number(i);
+                toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbWindows))*y);
+        }
+        toLaunch+=" ! vp8enc deadline=1 threads=4 target-bitrate=256000 ! queue ! rtpvp8pay ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
+
+
+        for (int i = 0; i < nbWindows; i++)
+        {
+            toLaunch+=" ximagesrc xid="+toSend.at(i) +" use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue "
+                      "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i) ;
+        }
+
+        qDebug() << toLaunch;
+
+        err = NULL;
+        pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
+        gst_element_set_state (pipeline, GST_STATE_PLAYING);
+    }
+    else
+        sendScreen();
+}
+
 
 //FONCTIONS : envoie le flux video via Gstreamer
 void Client::sendScreen()
@@ -72,9 +146,9 @@ void Client::sendScreen()
         gst_object_unref (pipeline);
     }
 
-    QString toLaunch="ximagesrc ! queue ! videoconvert ! queue ! videoscale "
-                     "! queue ! video/x-raw, width=600, height=300, framerate=30/1 "
-                     "! vp8enc ! queue ! rtpvp8pay ! udpsink host=127.0.0.1 port="+QString::number(port);
+    QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue ! "
+                     "video/x-raw, width="+ QString::number(screen.width())+", height="+ QString::number(screen.height())+", framerate=30/1 "
+                     "! vp8enc deadline=1 threads=4 target-bitrate=256000 ! queue ! rtpvp8pay ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
     qDebug() << toLaunch;
 
     err = NULL;
@@ -118,10 +192,6 @@ void Client::EnvoyerMessage(const QString &message)
 
     socket->write(paquet); // On envoie le paquet
     qDebug() <<"Sending message: "<< message;
-
-
-
-
 }
 
 //SLOT : Réception de données + traitement
@@ -161,6 +231,8 @@ void Client::processRequest(const QString &message)
     }
     if(req[0].compare("restartSending")==0) // Quand il reçoit l'ordre d'envoyer, il envoie
     {
+        nbClientsSending=req[1].toInt();
+        nbClientsSending==1?w2->getPushRefresh()->show():w2->getPushRefresh()->hide();
         sendScreen();
     }
     if(req[0].compare("chat")==0) // On ajoute le message reçu à la liste

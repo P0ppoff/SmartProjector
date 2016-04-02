@@ -5,6 +5,9 @@
 #include <QString>
 #include <QTcpSocket>
 #include <QStackedWidget>
+#include <QRect>
+#include <QApplication>
+#include <QDesktopWidget>
 
 #include <gst/gst.h>
 #include <gst/video/videooverlay.h>
@@ -31,7 +34,7 @@ class Client: public QWidget
       void start(QString address, quint16 port);
       void EnvoyerMessage(const QString &message);
 
-    public slots:
+   private slots:
       void donneesRecues();
       void connexionLost();
       void connecte();
@@ -39,15 +42,15 @@ class Client: public QWidget
       void sendScreen();
       void sendCastingValue(bool b);
       void sendChat();
+      void refreshWinList();
+      void sendWindowsForLinux(QStringList toSend);
 
-
-
-private slots:
-
-private:
+    private:
       QTcpSocket *socket; // Représente le serveur
       quint16 tailleMessage;
       int port;
       bool isSending;
+      int nbClientsSending;
+      QRect screen;
 };
 #endif // CLIENT_H
