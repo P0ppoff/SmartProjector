@@ -8,7 +8,7 @@
 #include <gst/gst.h>
 #include <gst/video/videooverlay.h>
 
-//#define __RPI_SERVER__
+#define __RPI_SERVER__
 
 Server::Server()
 {
@@ -229,11 +229,11 @@ void Server::setPipeline()
 #ifndef __RPI_SERVER__
         toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
                  "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
-                                                                                                "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! autovideosink";
+                                                                                                "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + " ! autovideosink";
 #else
         toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
                  "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
-                                                                                                "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! ximagesink sync=false";
+                                                                                                "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + " ! ximagesink sync=false";
 #endif
 
     }
