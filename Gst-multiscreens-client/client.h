@@ -32,17 +32,17 @@ class Client: public QWidget
       Client();
       void processRequest(const QString &message);
       void start(QString address, quint16 port);
-      void EnvoyerMessage(const QString &message);
+      void sendMessage(const QString &message);
 
    private slots:
-      void donneesRecues();
+      void receiveMessage();
       void connexionLost();
       void connecte();
       void connexionSuccess();
       void sendScreen();
       void sendCastingValue(bool b);
       void sendChat();
-      void refreshWinList();
+      void clickSendWindows();
       void sendWindowsForLinux(QStringList toSend);
 
     private:
@@ -50,6 +50,7 @@ class Client: public QWidget
       quint16 tailleMessage;
       int port;
       bool isSending;
+      bool isTeacher;
       int nbClientsSending;
       QRect screen;
 };

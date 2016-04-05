@@ -27,3 +27,5 @@ unix: LIBS += `pkg-config --cflags --libs gstreamer-1.0 gstreamer-video-1.0 gstr
 
 unix: CONFIG += link_pkgconfig
 unix: PKGCONFIG += gstreamer-1.0 gstreamer-video-1.0 gstreamer-base-1.0
+
+RESOURCES += resources.qrc

@@ -63,7 +63,24 @@
      <item row="2" column="1">
       <widget class="QLineEdit" name="Name_text">
        <property name="text">
-        <string>Nobody</string>
+        <string>mathias</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="PWD_text">
+       <property name="text">
+        <string>mathias</string>
+       </property>
+       <property name="echoMode">
+        <enum>QLineEdit::Password</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Password</string>
        </property>
       </widget>
      </item>

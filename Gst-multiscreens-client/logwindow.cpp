@@ -30,6 +30,11 @@ QString LogWindow::getPort()
     return ui->Port_text->text();
 }
 
+QString LogWindow::getPassword()
+{
+    return ui->PWD_text->text();
+}
+
 QString LogWindow::getName()
 {
     return ui->Name_text->text();

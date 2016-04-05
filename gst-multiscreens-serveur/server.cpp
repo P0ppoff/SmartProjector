@@ -2,6 +2,7 @@
 #include <iostream>
 #include <QDataStream>
 #include <QDesktopWidget>
+#include <QMessageBox>
 #include <QApplication>
 
 #include <gst/gst.h>
@@ -29,6 +30,7 @@ Server::Server()
         if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost))
              localIp=address.toString();
     }
+    //on initialise les variables propres au serveur et on lance l'affichage
     tailleMessage = 0;
     pipeline = NULL;
     allocatedPort = 5000;
@@ -37,44 +39,87 @@ Server::Server()
 
 //SLOT : quand une nouvelle connexion est établie, ajoute un Client à la liste et le connecte
 void Server::nouvelleConnexion()
-{  
+{
     User nouveauClient(serveur->nextPendingConnection()) ;
-
-
+    //Un client se connecte, on l'ajoute
     qDebug() << "Client connected : " << nouveauClient.sock->peerAddress();
-    connect(nouveauClient.sock, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
-    connect(nouveauClient.sock, SIGNAL(disconnected()), this, SLOT(deconnexionClient()));
-    sendToClient("port@"+QString::number(allocatedPort),nouveauClient.sock);
-    nouveauClient.port=allocatedPort;
-    allocatedPort++;
-
+    connect(nouveauClient.sock, SIGNAL(readyRead()), this, SLOT(receiveMessage()));
+    connect(nouveauClient.sock, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
+    nouveauClient.port=-1;
     clients << nouveauClient;
 }
 
+
+
 //SLOT : quand un message arrive, le récupère et le traite
-void Server::donneesRecues()
+void Server::receiveMessage()
 {
+
     QTcpSocket *socket = qobject_cast<QTcpSocket *>(sender());
     if (socket == 0)
         return;
 
     QDataStream in(socket);
-    if (tailleMessage == 0)
-    {
-        if (socket->bytesAvailable() < (int)sizeof(quint16))
-             return;
-        in >> tailleMessage;
+
+    while(1) {
+
+        if (tailleMessage == 0) {
+            if (socket->bytesAvailable() < (int)sizeof(tailleMessage))
+                return;
+
+            in >> tailleMessage;
+        }
+
+        if (socket->bytesAvailable() < tailleMessage)
+            return;
+
+        //récupère le message
+        QString messageRecu;
+        in >> messageRecu;
+
+
+        qDebug() <<"Received message: " << messageRecu;
+        processRequest(messageRecu,socket);
+
+       // reset for the next message
+       tailleMessage = 0;
+    }
+}
+
+//
+int Server::verifyDataBase(QString login,QString pwd)
+{
+    QFile file(":/database");
+    if(!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::information(0, "error", file.errorString());
     }
 
-    if (socket->bytesAvailable() < tailleMessage)
-        return;
-    QString message;
-    in >> message;
+    QTextStream in(&file);
 
+    while(!in.atEnd()) {
+        QString line = in.readLine();
+        QStringList fields = line.split("@");
+        if(fields[0]==login && fields[1]==pwd)
+        {
+            file.close();
+            return fields[2].toInt();
+        }
+    }
 
-     qDebug() << "Receiving message : " << message;
-     tailleMessage = 0;
-     processRequest(message,socket);
+    file.close();
+
+    return -1;
+}
+
+bool Server::alreadyConnected(QString name){
+    for (int i = 0; i < clients.size(); i++)
+    {
+        if(clients[i].name==name)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //FONCTION : réagit selon le message passé en paramètre
@@ -93,8 +138,24 @@ void Server::processRequest(const QString &message,QTcpSocket*socket)
     }
     else if (req[0].compare("name")==0)
     {
-        clients[idClient].name=req[1];
-        setPipeline();
+        int databaseResult = verifyDataBase(req[1],req[2]);
+        if(databaseResult==-1 || alreadyConnected(req[1]))
+        {
+            //si le client n'est pas dans la base, on le kick
+            qDebug() << "SERVER kicked " + req[1];
+            clients[idClient].sock->abort();
+        }
+        else
+        {
+            clients[idClient].name=req[1];
+            sendToClient("port@"+QString::number(allocatedPort),clients[idClient].sock);
+            clients[idClient].port=allocatedPort;
+            clients[idClient].isTeacher=databaseResult;
+            clients[idClient].isSending=true;
+            allocatedPort++;
+            sendToClient("isTeacher@"+QString::number(databaseResult),clients[idClient].sock);
+            setPipeline();
+        }
     }
     else if (req[0].compare("chat")==0)
     {
@@ -113,8 +174,6 @@ void Server::setPipeline()
        gst_element_set_state (pipeline, GST_STATE_NULL);
        gst_object_unref (pipeline);
     }
-
-
     for (int i = 0; i < clients.size(); i++)
     {
         if(clients[i].isSending)
@@ -122,7 +181,6 @@ void Server::setPipeline()
             nbSender++;
         }
     }
-
     if(nbSender>0)
     {
         int y=screen.height()/((int)nbSender);
@@ -140,19 +198,24 @@ void Server::setPipeline()
                 toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbSender))*y);
             }
         }
-        toLaunch+=" ! autovideosink sync=false";
-
+        //toLaunch+=" ! autovideosink sync=false";
+        toLaunch+=" ! ximagesink sync=false";
         for (int i = 0; i < clients.size(); i++)
         {
             if(clients[i].isSending)
             {
-                toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, "
+               toLaunch+=" dpsrc port="+ QString::number(clients[i].port)+" caps=\"application/x-rtp, media=(string)video, clock-rate=(int)90000"
+                         ", encoding-name=(string)H264\" ! rtph264depay ! queue ! h264parse ! queue ! omxh264dec ! queue ! videoscale ! video/x-raw "
+                         ", width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i);
+
+
+                /*toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, "
                           "encoding-name=(string)VP8, payload=(int)96\" ! rtpvp8depay ! vp8dec ! videoscale "
-                          "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i) ;
+                          "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i) ;*/
             }
         }
     }
-    else
+        else
     {
         toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
                  "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
@@ -163,7 +226,8 @@ void Server::setPipeline()
     err = NULL;
     pipeline = gst_parse_launch(toLaunch.toUtf8(), &err);
     gst_element_set_state (pipeline, GST_STATE_PLAYING);
-    sendToAllConnected("restartSending@"+ QString::number(nbSender) ); // tous les client doivent recommencer leur envoi
+    if(nbSender>0)
+    {sendToAllConnected("restartSending@"+ QString::number(nbSender) );} // tous les client doivent recommencer leur envoi
 }
 
 
@@ -185,6 +249,7 @@ QByteArray Server::createPacket(const QString &message)
 void Server::sendToClient(const QString &message,QTcpSocket*socket)
 {
     socket->write(createPacket(message));
+    qDebug() << "SENDING " << message;
 }
 
 //FONCTION : envoie le message à tous les clients
@@ -196,6 +261,7 @@ void Server::sendToAll(const QString &message)
     {
             clients[i].sock->write(paquet);
     }
+    qDebug() << "SENDING TO ALL " << message;
 }
 
 //FONCTION : envoie le message à tous les clients
@@ -210,11 +276,12 @@ void Server::sendToAllConnected(const QString &message)
             clients[i].sock->write(paquet);
         }
     }
+    qDebug() << "SENDING TO ALL CONNECTED" << message;
 }
 
 
 //SLOT : Lorsque la socket client est perdue supprime les données relatives au client change l'affichage
-void Server::deconnexionClient()
+void Server::clientDisconnected()
 {
     // On détermine quel client se déconnecte
     QTcpSocket *socket = qobject_cast<QTcpSocket *>(sender());
@@ -222,10 +289,13 @@ void Server::deconnexionClient()
         return;
 
     qDebug() << clients[getIndexFromSocket(socket)].sock->peerAddress() << "is now disconnected";
-    clients.removeAt(getIndexFromSocket(socket));
+    int num=getIndexFromSocket(socket);
+    int removedClientPort=clients[num].port;
+    clients.removeAt(num);
 
     socket->deleteLater();
-    setPipeline();
+    if(removedClientPort!=-1)
+        setPipeline();
 }
 
 

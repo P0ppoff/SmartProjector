@@ -23,13 +23,12 @@ Client::Client()
     connect(w2->getSendBox(),SIGNAL(toggled(bool)),this,SLOT(sendCastingValue(bool)));
     connect(w2->getPushChat(),SIGNAL(clicked()),this,SLOT(sendChat()));
 #ifdef __linux__
-    connect(w2->getPushRefresh(),SIGNAL(clicked()),this,SLOT(refreshWinList()));
+    connect(w2->getPushRefresh(),SIGNAL(clicked()),this,SLOT(clickSendWindows()));
 #else
     w2->getPushRefresh()->hide();
 #endif
     _stack->addWidget(w2);
     _stack->show();
-
     pipeline=NULL;
     isSending=true;
     tailleMessage = 0;
@@ -40,7 +39,7 @@ Client::Client()
 //SLOT : quand le boutton "send" est enclenché
 void Client::sendChat()
 {
-    EnvoyerMessage("chat@" + userName + " : "+ w2->getLineChat());
+    sendMessage("chat@" + userName + " : "+ w2->getLineChat());
 }
 
 //SLOT : quand le boutton "connexion" est enclenché
@@ -49,13 +48,13 @@ void Client::connecte()
     socket = new QTcpSocket(this);
     socket->abort();
     socket->connectToHost(w1->getIP(), w1->getPort().toInt());
-    connect(socket, SIGNAL(readyRead()), this, SLOT(donneesRecues()));
+    connect(socket, SIGNAL(readyRead()), this, SLOT(receiveMessage()));
     connect(socket, SIGNAL(connected()), this, SLOT(connexionSuccess()));
     connect(socket, SIGNAL(disconnected()), this, SLOT(connexionLost()));
     qDebug() <<"Trying to connect ...";
 }
 
-
+//SLOT : quand la connexion est perdue
 void Client::connexionLost()
 {
     socket->abort();
@@ -67,12 +66,13 @@ void Client::connexionLost()
     qDebug() <<"Connexion with server lost...";
 }
 
-void Client::refreshWinList()
+//SLOT : quand le boutton "Refresh/Send screen" est enclenché
+void Client::clickSendWindows()
 {
     QStringList toSend =  w2->getWindowsChecked();
     char *temp=getWinList();
     QString res =QString::fromLatin1(temp,strlen(temp));
-    w2->setTableScreen(res,toSend);
+    w2->updateListeWindows(res,toSend);
     free(temp);
     sendWindowsForLinux(toSend);
 }
@@ -80,16 +80,15 @@ void Client::refreshWinList()
 //SLOT : lorsque la connexion est établie, change l'affichage et communique avec le serveur
 void Client::connexionSuccess()
 {
-    _stack->setCurrentIndex((_stack->currentIndex()+1)%_stack->count());
     qDebug() <<"Client connected";
     userName=w1->getName();
-    EnvoyerMessage("name@" + userName);
+    sendMessage("name@" + userName +"@"+w1->getPassword());
 
 #ifdef __linux__
     //Récupère la liste des fenêtres existantes
     char *temp=getWinList();
     QString res =QString::fromLatin1(temp,strlen(temp));
-    w2->setTableScreen(res,QStringList());
+    w2->updateListeWindows(res,QStringList());
     free(temp);
 #endif
 }
@@ -123,7 +122,7 @@ void Client::sendWindowsForLinux(QStringList toSend)
         for (int i = 0; i < nbWindows; i++)
         {
             toLaunch+=" ximagesrc xid="+toSend.at(i) +" use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue "
-                      "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i) ;
+                      "! video/x-raw , width="+ QString::number(100) +", height="+ QString::number(100) +" ! mix.sink_" + QString::number(i) ;
         }
 
         qDebug() << toLaunch;
@@ -146,9 +145,15 @@ void Client::sendScreen()
         gst_object_unref (pipeline);
     }
 
-    QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue ! "
+    QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert  ! videoscale ! video/x-raw,"
+                     " width="+ QString::number(screen.width())+", height="+ QString::number(screen.height())+", framerate=30/1 ,format=(string)I420,force-aspect-ratio=true "
+                     "! queue ! x264enc pass=pass1 tune=zerolatency  speed-preset=veryfast  intra-refresh=true "
+                     "! queue ! rtph264pay  pt=96 ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
+
+
+    /*QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue ! "
                      "video/x-raw, width="+ QString::number(screen.width())+", height="+ QString::number(screen.height())+", framerate=30/1 "
-                     "! vp8enc deadline=1 threads=4 target-bitrate=256000 ! queue ! rtpvp8pay ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
+                     "! vp8enc deadline=1 threads=4 target-bitrate=256000 ! queue ! rtpvp8pay ! udpsink host="+ w1->getIP() +" port="+QString::number(port);*/
     qDebug() << toLaunch;
 
     err = NULL;
@@ -173,12 +178,12 @@ void Client::sendCastingValue(bool b)
         pipeline=NULL;
     }
     isSending=b;
-    EnvoyerMessage(toSend);
+    sendMessage(toSend);
 
 }
 
 //FONCTION : Envoie le message passé en paramètre au serveur
-void Client::EnvoyerMessage(const QString &message)
+void Client::sendMessage(const QString &message)
 {
     QByteArray paquet;
     QDataStream out(&paquet, QIODevice::WriteOnly);
@@ -195,28 +200,33 @@ void Client::EnvoyerMessage(const QString &message)
 }
 
 //SLOT : Réception de données + traitement
-void Client::donneesRecues()
+void Client::receiveMessage()
 {
     QDataStream in(socket);
 
-    if (tailleMessage == 0) // récupère la taille du message
-    {
-        if (socket->bytesAvailable() < (int)sizeof(quint16))
-             return;
-        in >> tailleMessage;
+    while(1) {
+
+        if (tailleMessage == 0) {
+            if (socket->bytesAvailable() < (int)sizeof(tailleMessage))
+                return;
+
+            in >> tailleMessage;
+        }
+
+        if (socket->bytesAvailable() < tailleMessage)
+            return;
+
+        //récupère le message
+        QString messageRecu;
+        in >> messageRecu;
+
+
+        qDebug() <<"Received message: " << messageRecu;
+        processRequest(messageRecu);
+
+       // reset for the next message
+       tailleMessage = 0;
     }
-    if (socket->bytesAvailable() < tailleMessage)
-        return;
-
-    //récupère le message
-    QString messageRecu;
-    in >> messageRecu;
-
-    tailleMessage = 0;
-
-    qDebug() <<"Received message: "<< messageRecu;
-    processRequest(messageRecu);
-
 }
 
 
@@ -228,15 +238,23 @@ void Client::processRequest(const QString &message)
     if(req[0].compare("port")==0)//Quand on lui donne son port, le client est prêt à envoyer
     {
         port=req[1].toInt();
+        //Une fois que le serveur nous a accepté on peut changer le menu
+        _stack->setCurrentIndex((_stack->currentIndex()+1)%_stack->count());
+        tailleMessage = 0;
     }
-    if(req[0].compare("restartSending")==0) // Quand il reçoit l'ordre d'envoyer, il envoie
+    else if(req[0].compare("restartSending")==0 && port!=-1) // Quand il reçoit l'ordre d'envoyer, il envoie
     {
         nbClientsSending=req[1].toInt();
         nbClientsSending==1?w2->getPushRefresh()->show():w2->getPushRefresh()->hide();
         sendScreen();
     }
-    if(req[0].compare("chat")==0) // On ajoute le message reçu à la liste
+    else if(req[0].compare("chat")==0) // On ajoute le message reçu à la liste
     {
         w2->getListMessageChat()->append(req[1]);
+    }
+    else if(req[0].compare("isTeacher")==0)
+    {
+        isTeacher=(req[1].toInt() ==1);
+        if(!isTeacher){w2->removeTeacherTab();}
     }
 }

@@ -29,8 +29,8 @@ class Server: public QWidget
 
     public slots:
        void nouvelleConnexion();
-       void donneesRecues();
-       void deconnexionClient();
+       void receiveMessage();
+       void clientDisconnected();
 
 
     private:
@@ -42,6 +42,8 @@ class Server: public QWidget
       int allocatedPort;
       quint16 tailleMessage;
       QString localIp;
+      int verifyDataBase(QString login,QString pwd);
+      bool alreadyConnected(QString name);
 
 };
 

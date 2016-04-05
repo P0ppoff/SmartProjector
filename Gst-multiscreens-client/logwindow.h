@@ -20,6 +20,7 @@ public:
     QPushButton* getButton();
     QString getIP();
     QString getName();
+    QString getPassword();
     QString getPort();
 
 private:

@@ -18,7 +18,6 @@ QCheckBox* MainWindow::getSendBox()
     return ui->checkBox;
 }
 
-
 QPushButton* MainWindow::getPushChat()
 {
     return ui->pushChat;
@@ -39,8 +38,14 @@ QTextEdit* MainWindow::getListMessageChat()
     return ui->textChat;
 }
 
+void MainWindow::removeTeacherTab()
+{
+    ui->tabWidget->removeTab(2);
+}
+
+
 //FONCTION : actualise la liste des fenêtres actives sur le pc
-void MainWindow::setTableScreen(QString entries,QStringList alreadyChecked)
+void MainWindow::updateListeWindows(QString entries,QStringList alreadyChecked)
 {
     ui->table->clear();
     QStringList lines= entries.split(QRegExp("\n"));

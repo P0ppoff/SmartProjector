@@ -25,8 +25,9 @@ public:
     QPushButton* getPushChat();
     QPushButton* getPushRefresh();
     QString getLineChat();
+    void removeTeacherTab();
     QTextEdit* getListMessageChat();
-    void setTableScreen(QString entries,QStringList alreadyChecked);
+    void updateListeWindows(QString entries,QStringList alreadyChecked);
     QStringList getWindowsChecked();
 
 private:

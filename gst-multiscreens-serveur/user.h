@@ -14,6 +14,7 @@ public:
     QTcpSocket * sock;
     int port;
     bool isSending;
+    bool isTeacher;
     QString name;
     User(QTcpSocket * serv);
 };
