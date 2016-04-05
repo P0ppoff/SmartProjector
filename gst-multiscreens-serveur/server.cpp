@@ -219,7 +219,11 @@ void Server::setPipeline()
     {
         toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
                  "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
-                 "! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! autovideosink";
+                 "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! ximagesink";
+
+        /*toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
+                 "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
+                 "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! autovideosink";*/
     }
     qDebug() << toLaunch;
 
