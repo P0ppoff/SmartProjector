@@ -199,7 +199,7 @@ void Server::setPipeline()
             }
         }
         //toLaunch+=" ! autovideosink sync=false";
-        toLaunch+="! videoconvert ! ximagesink sync=false";
+        toLaunch+=" ! videoconvert ! ximagesink sync=false";
         for (int i = 0; i < clients.size(); i++)
         {
             if(clients[i].isSending)
