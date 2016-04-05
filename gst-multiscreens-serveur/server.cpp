@@ -199,19 +199,19 @@ void Server::setPipeline()
             }
         }
         //toLaunch+=" ! autovideosink sync=false";
-        toLaunch+=" ! ximagesink sync=false";
+        toLaunch+="! videoconvert ! ximagesink sync=false";
         for (int i = 0; i < clients.size(); i++)
         {
             if(clients[i].isSending)
             {
-               toLaunch+=" dpsrc port="+ QString::number(clients[i].port)+" caps=\"application/x-rtp, media=(string)video, clock-rate=(int)90000"
+               toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps=\"application/x-rtp, media=(string)video, clock-rate=(int)90000"
                          ", encoding-name=(string)H264\" ! rtph264depay ! queue ! h264parse ! queue ! omxh264dec ! queue ! videoscale ! video/x-raw "
-                         ", width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i);
+                         ", width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.";
 
 
                 /*toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, "
                           "encoding-name=(string)VP8, payload=(int)96\" ! rtpvp8depay ! vp8dec ! videoscale "
-                          "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i) ;*/
+                          "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.";*/
             }
         }
     }
