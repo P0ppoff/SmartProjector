@@ -204,8 +204,8 @@ void Server::setPipeline()
         {
             if(clients[i].isSending)
             {
-               toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps=\"application/x-rtp, media=(string)video, clock-rate=(int)90000"
-                         ", encoding-name=(string)H264\" ! rtph264depay ! queue ! h264parse ! queue ! omxh264dec ! queue ! videoscale ! video/x-raw "
+               toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps=\"application/x-rtp, media=video, clock-rate=90000"
+                         ", encoding-name=H264\" ! rtph264depay ! queue ! h264parse ! queue ! omxh264dec ! queue ! videoscale ! video/x-raw "
                          ", width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.";
 
 
@@ -219,7 +219,7 @@ void Server::setPipeline()
     {
         toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
                  "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
-                 "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! ximagesink";
+                 "! videoconvert ! video/x-raw , width="+ QString::number(300) +", height="+ QString::number(300) + "! ximagesink sync=false";
 
         /*toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
                  "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "

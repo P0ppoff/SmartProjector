@@ -145,8 +145,8 @@ void Client::sendScreen()
         gst_object_unref (pipeline);
     }
 
-   QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! videoscale ! video/x-raw,"
-                     " width="+ QString::number(screen.width())+", height="+ QString::number(screen.height())+", framerate=30/1, format=I420, force-aspect-ratio=true "
+   QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! videoscale "
+                     "! video/x-raw, framerate=30/1, format=I420, force-aspect-ratio=true "
                      "! queue ! x264enc pass=pass1 tune=zerolatency speed-preset=veryfast intra-refresh=true "
                      "! queue ! rtph264pay pt=96 ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
 
