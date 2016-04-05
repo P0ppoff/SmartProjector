@@ -18,32 +18,32 @@ class Server: public QWidget
     GError* err;
     GstElement *pipeline;
 
-    public:
-      Server();
-      QByteArray createPacket(const QString &message);
-      void sendToAll(const QString &message);
-      void sendToAllConnected(const QString &message);
-      void sendToClient(const QString &message,QTcpSocket*socket);
-      void processRequest(const QString &message,QTcpSocket*socket);
-      void setPipeline();
+public:
+    Server();
+    QByteArray createPacket(const QString &message);
+    void sendToAll(const QString &message);
+    void sendToAllConnected(const QString &message);
+    void sendToClient(const QString &message,QTcpSocket*socket);
+    void processRequest(const QString &message,QTcpSocket*socket);
+    void setPipeline();
 
-    public slots:
-       void nouvelleConnexion();
-       void receiveMessage();
-       void clientDisconnected();
+public slots:
+    void nouvelleConnexion();
+    void receiveMessage();
+    void clientDisconnected();
 
 
-    private:
-      QRect screen;
-      int getIndexFromSocket(QTcpSocket*socket);
-      QTcpServer *serveur;
-      QList<User> clients;
-      //QList<QTcpSocket *> clients;
-      int allocatedPort;
-      quint16 tailleMessage;
-      QString localIp;
-      int verifyDataBase(QString login,QString pwd);
-      bool alreadyConnected(QString name);
+private:
+    QRect screen;
+    int getIndexFromSocket(QTcpSocket*socket);
+    QTcpServer *serveur;
+    QList<User> clients;
+    //QList<QTcpSocket *> clients;
+    int allocatedPort;
+    quint16 tailleMessage;
+    QString localIp;
+    int verifyDataBase(QString login,QString pwd);
+    bool alreadyConnected(QString name);
 
 };
 

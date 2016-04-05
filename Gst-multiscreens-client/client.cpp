@@ -2,8 +2,10 @@
 #include "math.h"
 extern "C"
 {
-    #include "wmctrl.h"
+#include "wmctrl.h"
 }
+
+//#define __RPI_SERVER__
 
 Client::Client()
 {
@@ -60,8 +62,8 @@ void Client::connexionLost()
     socket->abort();
     if(pipeline!=NULL)
     {
-       gst_element_set_state (pipeline, GST_STATE_NULL);
-       _stack->setCurrentIndex(_stack->currentIndex()-1);
+        gst_element_set_state (pipeline, GST_STATE_NULL);
+        _stack->setCurrentIndex(_stack->currentIndex()-1);
     }
     qDebug() <<"Connexion with server lost...";
 }
@@ -111,18 +113,27 @@ void Client::sendWindowsForLinux(QStringList toSend)
         toLaunch+="videomixer name=mix";
         for (int i = 0; i < nbWindows; i++)
         {
-                toLaunch+=" sink_" + QString::number(i);
-                toLaunch+="::xpos=" + QString::number((i/(int)sqrt(nbWindows))*x);
-                toLaunch+=" sink_" + QString::number(i);
-                toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbWindows))*y);
+            toLaunch+=" sink_" + QString::number(i);
+            toLaunch+="::xpos=" + QString::number((i/(int)sqrt(nbWindows))*x);
+            toLaunch+=" sink_" + QString::number(i);
+            toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbWindows))*y);
         }
+#ifndef __RPI_SERVER__
         toLaunch+=" ! vp8enc deadline=1 threads=4 target-bitrate=256000 ! queue ! rtpvp8pay ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
-
+#else
+        toLaunch+=" ! queue ! x264enc bitrate=2048000 threads=4 pass=pass1 tune=zerolatency speed-preset=veryfast intra-refresh=true "
+                  "! queue ! rtph264pay pt=96 ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
+#endif
 
         for (int i = 0; i < nbWindows; i++)
         {
+#ifndef __RPI_SERVER__
             toLaunch+=" ximagesrc xid="+toSend.at(i) +" use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue "
-                      "! video/x-raw , width="+ QString::number(100) +", height="+ QString::number(100) +" ! mix.sink_" + QString::number(i) ;
+                                                      "! video/x-raw , width="+ QString::number(100) +", height="+ QString::number(100) +" ! mix.sink_" + QString::number(i) ;
+#else
+            toLaunch+=" ximagesrc xid="+toSend.at(i) +" use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue "
+                                                      "! video/x-raw, framerate=30/1, format=I420, force-aspect-ratio=true ! mix.";
+#endif
         }
 
         qDebug() << toLaunch;
@@ -144,16 +155,17 @@ void Client::sendScreen()
         gst_element_set_state (pipeline, GST_STATE_NULL);
         gst_object_unref (pipeline);
     }
-
-   QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! videoscale "
+#ifndef __RPI_SERVER__
+    QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue ! "
+                     "video/x-raw, width="+ QString::number(screen.width())+", height="+ QString::number(screen.height())+", framerate=30/1 "
+                                                                                                                          "! vp8enc deadline=1 threads=4 target-bitrate=256000 ! queue ! rtpvp8pay ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
+#else
+    QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! videoscale "
                      "! video/x-raw, framerate=30/1, format=I420, force-aspect-ratio=true "
                      "! queue ! x264enc pass=pass1 tune=zerolatency speed-preset=veryfast intra-refresh=true "
                      "! queue ! rtph264pay pt=96 ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
+#endif
 
-
-    /*QString toLaunch="ximagesrc use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue ! "
-                     "video/x-raw, width="+ QString::number(screen.width())+", height="+ QString::number(screen.height())+", framerate=30/1 "
-                     "! vp8enc deadline=1 threads=4 target-bitrate=256000 ! queue ! rtpvp8pay ! udpsink host="+ w1->getIP() +" port="+QString::number(port);*/
     qDebug() << toLaunch;
 
     err = NULL;
@@ -224,8 +236,8 @@ void Client::receiveMessage()
         qDebug() <<"Received message: " << messageRecu;
         processRequest(messageRecu);
 
-       // reset for the next message
-       tailleMessage = 0;
+        // reset for the next message
+        tailleMessage = 0;
     }
 }
 

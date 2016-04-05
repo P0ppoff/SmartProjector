@@ -28,30 +28,30 @@ class Client: public QWidget
     GstMessage *msg;
     QString userName;
 
-    public:
-      Client();
-      void processRequest(const QString &message);
-      void start(QString address, quint16 port);
-      void sendMessage(const QString &message);
+public:
+    Client();
+    void processRequest(const QString &message);
+    void start(QString address, quint16 port);
+    void sendMessage(const QString &message);
 
-   private slots:
-      void receiveMessage();
-      void connexionLost();
-      void connecte();
-      void connexionSuccess();
-      void sendScreen();
-      void sendCastingValue(bool b);
-      void sendChat();
-      void clickSendWindows();
-      void sendWindowsForLinux(QStringList toSend);
+private slots:
+    void receiveMessage();
+    void connexionLost();
+    void connecte();
+    void connexionSuccess();
+    void sendScreen();
+    void sendCastingValue(bool b);
+    void sendChat();
+    void clickSendWindows();
+    void sendWindowsForLinux(QStringList toSend);
 
-    private:
-      QTcpSocket *socket; // Représente le serveur
-      quint16 tailleMessage;
-      int port;
-      bool isSending;
-      bool isTeacher;
-      int nbClientsSending;
-      QRect screen;
+private:
+    QTcpSocket *socket; // Représente le serveur
+    quint16 tailleMessage;
+    int port;
+    bool isSending;
+    bool isTeacher;
+    int nbClientsSending;
+    QRect screen;
 };
 #endif // CLIENT_H

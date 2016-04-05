@@ -8,6 +8,7 @@
 #include <gst/gst.h>
 #include <gst/video/videooverlay.h>
 
+//#define __RPI_SERVER__
 
 Server::Server()
 {
@@ -20,15 +21,15 @@ Server::Server()
     }
     else
     {
-       qDebug() << "Server Started";
-       screen = QApplication::desktop()->screenGeometry();
-       connect(serveur, SIGNAL(newConnection()), this, SLOT(nouvelleConnexion()));
+        qDebug() << "Server Started";
+        screen = QApplication::desktop()->screenGeometry();
+        connect(serveur, SIGNAL(newConnection()), this, SLOT(nouvelleConnexion()));
     }
 
     //on récupère l'ip du serveur pour l'afficher
     foreach (const QHostAddress &address, QNetworkInterface::allAddresses()) {
         if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost))
-             localIp=address.toString();
+            localIp=address.toString();
     }
     //on initialise les variables propres au serveur et on lance l'affichage
     tailleMessage = 0;
@@ -81,8 +82,8 @@ void Server::receiveMessage()
         qDebug() <<"Received message: " << messageRecu;
         processRequest(messageRecu,socket);
 
-       // reset for the next message
-       tailleMessage = 0;
+        // reset for the next message
+        tailleMessage = 0;
     }
 }
 
@@ -112,6 +113,10 @@ int Server::verifyDataBase(QString login,QString pwd)
 }
 
 bool Server::alreadyConnected(QString name){
+    if(name.compare("mathias")==0) // cet utilisateur se connecte autant qu'il veut, que je puisse tester
+    {
+        return false;
+    }
     for (int i = 0; i < clients.size(); i++)
     {
         if(clients[i].name==name)
@@ -171,8 +176,8 @@ void Server::setPipeline()
 
     if(pipeline!=NULL)
     {
-       gst_element_set_state (pipeline, GST_STATE_NULL);
-       gst_object_unref (pipeline);
+        gst_element_set_state (pipeline, GST_STATE_NULL);
+        gst_object_unref (pipeline);
     }
     for (int i = 0; i < clients.size(); i++)
     {
@@ -198,32 +203,39 @@ void Server::setPipeline()
                 toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbSender))*y);
             }
         }
-        //toLaunch+=" ! autovideosink sync=false";
+#ifndef __RPI_SERVER__
+        toLaunch+=" ! autovideosink sync=false";
+#else
         toLaunch+=" ! videoconvert ! ximagesink sync=false";
+#endif
         for (int i = 0; i < clients.size(); i++)
         {
             if(clients[i].isSending)
             {
+#ifndef __RPI_SERVER__
+                toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, "
+                                                                            "encoding-name=(string)VP8, payload=(int)96, framerate=(fraction)30/1\" ! rtpvp8depay ! vp8dec ! videoscale "
+                                                                            "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.";
+#else
                 toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps=\"application/x-rtp, media=video, clock-rate=90000"
-                          ", encoding-name=H264\" ! rtph264depay ! queue ! h264parse ! queue ! omxh264dec ! queue ! videoscale ! video/x-raw "
-                          ", width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.";
-
-
-                /*toLaunch+=" udpsrc port="+ QString::number(clients[i].port)+" caps = \"application/x-rtp, media=(string)video, "
-                          "encoding-name=(string)VP8, payload=(int)96\" ! rtpvp8depay ! vp8dec ! videoscale "
-                          "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.";*/
+                                                                            ", encoding-name=H264, framerate=30/1\" ! rtph264depay ! queue ! h264parse ! queue ! omxh264dec ! queue ! videoscale ! video/x-raw "
+                                                                            ", width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.";
+#endif
             }
         }
     }
-        else
+    else
     {
+#ifndef __RPI_SERVER__
         toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
                  "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
-                 "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! ximagesink sync=false";
-
-        /*toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
+                                                                                                "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! autovideosink";
+#else
+        toLaunch="videotestsrc pattern=3 ! textoverlay font-desc=\"Sans 24\" "
                  "text=\"Connect to "+  localIp + ":"+ QString::number(serveur->serverPort()) + "\" shaded-background=true "
-                 "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! autovideosink";*/
+                                                                                                "! videoconvert ! video/x-raw , width="+ QString::number(screen.width()) +", height="+ QString::number(screen.height()) + "! ximagesink sync=false";
+#endif
+
     }
     qDebug() << toLaunch;
 
@@ -263,7 +275,7 @@ void Server::sendToAll(const QString &message)
 
     for (int i = 0; i < clients.size(); i++)
     {
-            clients[i].sock->write(paquet);
+        clients[i].sock->write(paquet);
     }
     qDebug() << "SENDING TO ALL " << message;
 }
