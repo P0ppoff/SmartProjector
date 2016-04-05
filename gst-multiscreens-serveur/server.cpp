@@ -205,7 +205,11 @@ void Server::setPipeline()
                 toLaunch+=" sink_" + QString::number(i);
                 toLaunch+="::xpos=" + QString::number((screen.width() / taille_grid) * (nb_client % taille_grid));
                 toLaunch+=" sink_" + QString::number(i);
-                toLaunch+="::ypos=" + QString::number((screen.height() / taille_grid) * ((int)(taille_grid / nb_client)));
+                if(nb_client == 0){
+                    toLaunch+="::ypos=0";
+                }else{
+                    toLaunch+="::ypos=" + QString::number((screen.height() / taille_grid) * ((int)(taille_grid / nb_client)));
+                }
                 nb_client++;
             }
         }
