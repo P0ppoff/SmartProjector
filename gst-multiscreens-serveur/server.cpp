@@ -193,14 +193,20 @@ void Server::setPipeline()
 
         toLaunch="videomixer name=mix";
 
+        int taille_grid; // nombre de ligne/colonne de la grille
+        taille_grid = sqrt(nbSender); // donne le nombre entier dont la racine carré inférieur est le plus proche
+        if (pow(taille_grid, 2) != nbSender) taille_grid++;
+
+        int nb_client = 0;
         for (int i = 0; i < clients.size(); i++)
         {
             if(clients[i].isSending)
             {
                 toLaunch+=" sink_" + QString::number(i);
-                toLaunch+="::xpos=" + QString::number((i/(int)sqrt(nbSender))*x);
+                toLaunch+="::xpos=" + QString::number((screen.width() / taille_grid) * (nb_client % taille_grid));
                 toLaunch+=" sink_" + QString::number(i);
-                toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbSender))*y);
+                toLaunch+="::ypos=" + QString::number((screen.height() / taille_grid) * ((int)(taille_grid / nb_client)));
+                nb_client++;
             }
         }
 #ifndef __RPI_SERVER__
