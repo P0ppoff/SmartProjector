@@ -8,7 +8,7 @@
 #include <gst/gst.h>
 #include <gst/video/videooverlay.h>
 
-#define __RPI_SERVER__
+//#define __RPI_SERVER__
 
 Server::Server()
 {
@@ -188,17 +188,15 @@ void Server::setPipeline()
     }
     if(nbSender>0)
     {
-        int y=screen.height()/((int)nbSender);
-        int x=screen.width()/((int)nbSender);
-
         toLaunch="videomixer name=mix";
 
         int taille_grid; // nombre de ligne/colonne de la grille
         taille_grid = sqrt(nbSender); // donne le nombre entier dont la racine carré inférieur est le plus proche
         if (pow(taille_grid, 2) != nbSender) taille_grid++;
 
-        qDebug() << taille_grid;
-        qDebug() << nbSender;
+        int y=screen.height()/(taille_grid);
+        int x=screen.width()/(taille_grid);
+
 
         int nb_client = 0;
         for (int i = 0; i < clients.size(); i++)
@@ -211,13 +209,12 @@ void Server::setPipeline()
                 if(nb_client == 0){
                     toLaunch+="::ypos=0";
                 }else{
-                    toLaunch+="::ypos=" + QString::number((screen.height() / taille_grid) * ((int)(taille_grid / nb_client)));
+                    toLaunch+="::ypos=" + QString::number((screen.height() / taille_grid) * ((int)(nb_client / taille_grid)));
                 }
                 nb_client++;
             }
         }
 
-        qDebug() << nb_client;
         
 #ifndef __RPI_SERVER__
         toLaunch+=" ! autovideosink sync=false";

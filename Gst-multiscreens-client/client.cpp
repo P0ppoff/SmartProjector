@@ -101,8 +101,6 @@ void Client::sendWindowsForLinux(QStringList toSend)
     int nbWindows = toSend.count();
     if(nbWindows>0)
     {
-        int y=screen.height()/(nbWindows);
-        int x=screen.width()/(nbWindows);
         QString toLaunch="";
         if(pipeline!=NULL)
         {
@@ -110,14 +108,29 @@ void Client::sendWindowsForLinux(QStringList toSend)
             gst_object_unref (pipeline);
         }
 
-        toLaunch+="videomixer name=mix";
+        toLaunch="videomixer name=mix";
+
+        int taille_grid; // nombre de ligne/colonne de la grille
+        taille_grid = sqrt(nbWindows); // donne le nombre entier dont la racine carré inférieur est le plus proche
+        if (pow(taille_grid, 2) != nbWindows) taille_grid++;
+
+        int y=screen.height()/(taille_grid);
+        int x=screen.width()/(taille_grid);
+
+        int nb_client = 0;
         for (int i = 0; i < nbWindows; i++)
         {
             toLaunch+=" sink_" + QString::number(i);
-            toLaunch+="::xpos=" + QString::number((i/(int)sqrt(nbWindows))*x);
+            toLaunch+="::xpos=" + QString::number((screen.width() / taille_grid) * (nb_client % taille_grid));
             toLaunch+=" sink_" + QString::number(i);
-            toLaunch+="::ypos=" + QString::number((i%(int)sqrt(nbWindows))*y);
+            if(nb_client == 0){
+                toLaunch+="::ypos=0";
+            }else{
+                toLaunch+="::ypos=" + QString::number((screen.height() / taille_grid) * ((int)(nb_client / taille_grid)));
+            }
+            nb_client++;
         }
+
 #ifndef __RPI_SERVER__
         toLaunch+=" ! vp8enc deadline=1 threads=4 target-bitrate=256000 ! queue ! rtpvp8pay ! udpsink host="+ w1->getIP() +" port="+QString::number(port);
 #else
@@ -129,7 +142,7 @@ void Client::sendWindowsForLinux(QStringList toSend)
         {
 #ifndef __RPI_SERVER__
             toLaunch+=" ximagesrc xid="+toSend.at(i) +" use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue "
-                                                      "! video/x-raw , width="+ QString::number(100) +", height="+ QString::number(100) +" ! mix.sink_" + QString::number(i) ;
+                                                      "! video/x-raw , width="+ QString::number(x) +", height="+ QString::number(y) +" ! mix.sink_" + QString::number(i) ;
 #else
             toLaunch+=" ximagesrc xid="+toSend.at(i) +" use-damage=false ! queue ! videoconvert ! queue ! videoscale ! queue "
                                                       "! video/x-raw, framerate=30/1, format=I420, force-aspect-ratio=true ! mix.";
