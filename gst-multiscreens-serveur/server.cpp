@@ -197,6 +197,9 @@ void Server::setPipeline()
         taille_grid = sqrt(nbSender); // donne le nombre entier dont la racine carré inférieur est le plus proche
         if (pow(taille_grid, 2) != nbSender) taille_grid++;
 
+        qDebug() << taille_grid;
+        qDebug() << nbSender;
+
         int nb_client = 0;
         for (int i = 0; i < clients.size(); i++)
         {
@@ -213,6 +216,9 @@ void Server::setPipeline()
                 nb_client++;
             }
         }
+
+        qDebug() << nb_client;
+        
 #ifndef __RPI_SERVER__
         toLaunch+=" ! autovideosink sync=false";
 #else
