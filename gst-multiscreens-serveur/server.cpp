@@ -8,7 +8,7 @@
 #include <gst/gst.h>
 #include <gst/video/videooverlay.h>
 
-//#define __RPI_SERVER__
+#define __RPI_SERVER__
 
 Server::Server()
 {

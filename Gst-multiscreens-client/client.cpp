@@ -5,7 +5,7 @@ extern "C"
 #include "wmctrl.h"
 }
 
-//#define __RPI_SERVER__
+#define __RPI_SERVER__
 
 Client::Client()
 {
